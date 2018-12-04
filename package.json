@@ -2,9 +2,10 @@
   "name": "warehouse-inventory-control",
   "version": "1.0.0",
   "description": "React Node app",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "server.js",
+    "test": "mocha --exit"
   },
   "keywords": [
     "react",

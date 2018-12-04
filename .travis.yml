@@ -1,0 +1,10 @@
+language: node_js
+node_js: node
+services: "-mongodb"
+deploy:
+  provider: heroku
+  api_key:
+    secure: vd1fkTfDcaf9GeOTBbVmFpUtKIt6DH3Qr+J9N1dMlGOo+y7vHGjrkogWbYR4ahvNTFp+bK/ulJi3qzZLT+tfhUpsh1jME7ivcitAFFPyvGVcDX1yGkaCDOFxuarpn1TSrWwg+thK49yC2GPmSwqqeLWGuCDrz5kWifa9pBBoVAWg/x4Pby1T97taHibO4QO8Su9ZGCchRpijMHxAxJQ9KnoZ96DnRt/Lhh/3BDM1NzQpWE+MZJfZRjHE2dOfh7SZ5NYl8/yqjRja7sBrlCL0u1VspwoDc+cUt8Y11JTWzVxHnIYW32DEJzWLXa8nSvosgh9UaCBzPGqBHAsQGWVV7eGF/RljrtJwSm4iDCmblAFQ3AwamWetCMU++LMxeWeV0UAS1ue5s5lJMmg9idLs8NE7UGFAjDgcNi3Oe49l8GzTjVYOXap3xY7kFpBd+CQ4KzBtQtjuhsGNTIbNkBRtHA1P4IGQpNsBHDltxxMW32x2ElofhDe5/mc62+2+2KoOBLBwKN+gOip4vSnIdUX1DfODzimofan1CIJLkkXezOsROakMJCLkV41dZa4wurHrEmyilUWSM2A9eVv1wVc5cHuEheTPWuyLfgRs+TrD+ZV7RNHXjiro3Hvccr65CPm6pe2LqO183+Av9A9DpfkgK/1By6OEJohv2sVeEv4YKHA=
+  app: afternoon-chamber-34239
+  on:
+    repo: adrianasu/warehouse-inventory-control
