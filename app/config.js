@@ -7,7 +7,7 @@ exports.TEST_DATABASE_URL =
  
 exports.PORT = process.env.PORT || 3000;
 
-exports.CLIENT_ORIGIN = 'www.warehouse.com';
+exports.CLIENT_ORIGIN = 'http://localhost:3000';
 
 exports.HTTP_STATUS_CODES = {
     OK: 200,

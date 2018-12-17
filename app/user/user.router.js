@@ -12,12 +12,12 @@ const userRouter = express.Router();
 //create new user
 userRouter.post('/', (req, res) => {
     const newUser = {
-        name: req.body.name,
-        email: req.body.email,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         username: req.body.username,
         password: req.body.password
     };
-
+    
     // validate new user data using Joi
     const validation = Joi.validate( newUser, User.UserJoiSchema );
     if( validation.error ){
@@ -25,34 +25,23 @@ userRouter.post('/', (req, res) => {
             message: validation.error.details[0].message
         });
     }
-
-    // verify if username or email exists already in our DB.
+    
+    // verify if username exists already in our DB.
     // use findOne mongoose function to try to retrieve an existent user.
     Users
-        .findOne({
-            // $or operator performs a logical 'or' operation on an array of two
-            // or more <expressions> and selects the documents that satisfy at
-            // least one of the <expressions>
-            $or: [{
-                email: newUser.email
-            },
-            {
-                username: newUser.username
-            }
-        ]
-        })
-        .then(user => {
+    .findOne({ username: newUser.username })
+        .then( user => {
             if( user ){
-                return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-                    message: 'A user with that username and/or email already exists.'
+                return res.status( HTTP_STATUS_CODES.BAD_REQUEST).json({
+                    message: 'A user with that username already exists.'
                 });
             }
-            // username/email non existent so hash password
+            // username non existent so hash password
             return Users.hashPassword(newUser.password);
         })
         .then(passwordHash => {
             newUser.password = passwordHash;
-            // attemp to create new user
+            // attempt to create new user
             return Users
                 .create(newUser)
                 .then(createdUser => {
@@ -91,7 +80,7 @@ userRouter.get('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVE
         });
 });
 
-// update user's name, email or accessLevel by id
+// update user's name, or accessLevel by id
 userRouter.put('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVERVIEW),
         (req, res) => {
 
@@ -100,12 +89,12 @@ userRouter.put('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVE
         const message = `Request path id ${req.params.userId} and request body id ${req.body.id} must match`;
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
             message
-        });
+        }); 
     }
     // we only support a subset of fields being updateable.
     // If the user sent over any of them 
     // we update those values on the database
-    const updateableFields = ["name", "email", "accessLevel"];
+    const updateableFields = ["firstName", "lastName", "accessLevel"];
     // check what fields were sent in the request body to update
     const toUpdate = {};
     updateableFields.forEach(field => {
@@ -117,7 +106,7 @@ userRouter.put('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVE
     if (toUpdate.length === 0) {
         const message = `Missing \`${updateableFields.join('or ')}\` in request body`;
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-            err: message
+            message
         });
     }
     
@@ -135,10 +124,10 @@ userRouter.put('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVE
                 });
             }
             // users with accessLevel equal to Overview or Public are 
-            // allowed to update their own name and email only.
-            if (req.user.accessLevel <= User.ACCESS_PUBLIC &&
-                (req.user.name !== user.name || req.user.email !== user.email)) {
-                    const message = `Unauthorized. You're only allowed to edit your name and/or email.`;
+            // allowed to update their own name only.
+            if( req.user.accessLevel <= User.ACCESS_PUBLIC &&
+                req.user.name !== user.name ){
+                    const message = `Unauthorized. You're only allowed to edit your name.`;
                     return res.status(HTTP_STATUS_CODES.UNAUTHORIZED).json({
                         message
                     });

@@ -6,7 +6,6 @@ mongoose.Promise = global.Promise;
 const { app, runServer, closeServer } = require('../app/server');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const User = require('../app/user/user.model');
-const Users = User.User;
 
 const { generateTestUser, generateToken } = require('./fakeUser');
 
@@ -16,9 +15,9 @@ const expect = chai.expect;
 chai.use(chaiHttp);
 
 let testUser, jwToken;
-const userKeys = ['id', 'name', 'email', 'accessLevel', 'levels'];
-const newUserKeys = ['name', 'email', 'username'];
-const publicUserKeys = ['id', 'name', 'accessLevel', 'levels'];
+const userKeys = ['id', 'firstName', 'lastName', 'accessLevel', 'levels'];
+const newUserKeys = ['firstName', 'lastName', 'username'];
+const publicUserKeys = ['id', 'firstName', 'lastName', 'accessLevel', 'levels'];
 
 function checkResponse( res, statusCode, resType ){
     expect(res).to.have.status(statusCode);
@@ -108,8 +107,8 @@ describe( 'Users API resource tests', function(){
     it( 'Should update a user by id', function(){
         let foundUser;
         let updateUser = {
-            name: "New Name",
-            email: "new@email.com",
+            firstName: "NewName",
+            lastName: "OtherName",
             accessLevel: 10
         }
 

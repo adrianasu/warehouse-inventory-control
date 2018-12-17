@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node start.js",
-    "test": "mocha --exit",
+    "test": "mocha --exit --timeout 10000",
     "dev": "nodemon start.js"
   },
   "keywords": [
@@ -20,13 +20,12 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.3",
     "cors": "^2.8.5",
-    "dotenv": "^6.1.0",
     "express": "^4.16.4",
-    "faker": "^4.1.0",
     "joi": "^14.3.0",
     "jsonwebtoken": "^8.4.0",
     "mongoose": "^5.3.14",
     "morgan": "^1.9.1",
+    "nodemon": "^1.18.7",
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
@@ -35,6 +34,8 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-http": "^4.2.0",
+    "dotenv": "^6.2.0",
+    "faker": "^4.1.0",
     "mocha": "^5.2.0"
   }
 }

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 // joi allows to create schemas for JS objects to ensure validation of data
 const Joi = require('joi');
+mongoose.Promise = global.Promise;
 
 const ACCESS_BASIC = 0;
 const ACCESS_OVERVIEW = 10;
@@ -13,11 +14,11 @@ const levels = { ACCESS_BASIC, ACCESS_OVERVIEW, ACCESS_PUBLIC, ACCESS_ADMIN };
 
 // mongoose schema to define the structure of our user documents within a collection
 const userSchema = new mongoose.Schema({
-    name: {
+    firstName: {
         type: String,
         required: true
     },
-    email: {
+    lastName: {
         type: String,
         required: true
     },
@@ -40,8 +41,8 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.serialize = function(){
     return {
         id: this._id,
-        name: this.name,
-        email: this.email,
+        firstName: this.firstName,
+        lastName: this.lastName,
         username: this.username,
         accessLevel: this.accessLevel,
         levels
@@ -51,7 +52,8 @@ userSchema.methods.serialize = function(){
 userSchema.methods.serializePublic = function () {
     return {
         id: this._id,
-        name: this.name,
+        firstName: this.firstName,
+        lastName: this.lastName,
         accessLevel: this.accessLevel,
         levels
     };
@@ -84,16 +86,17 @@ userSchema.statics.hasAccess = function( accessLevel ){
 
 // use Joi to determine that some data is valid to create a new user
 const UserJoiSchema = Joi.object().keys({
-    name: Joi.string().min(1).trim().required(),
+    firstName: Joi.string().min(1).trim().required(),
+    lastName: Joi.string().min(1).trim().required(),
     username: Joi.string().min(4).max(30).trim().required(),
     password: Joi.string().min(7).max(30).trim().required(),
-    email: Joi.string().email().trim().required(),
     accessLevel: Joi.number().optional()
 });
 
 const UpdateUserJoiSchema = Joi.object().keys({
-    name: Joi.string().min(1).trim().required(),
-    email: Joi.string().email().trim().required(),
+    firstName: Joi.string().min(1).trim(),
+    lastName: Joi.string().min(1).trim(),
+    username: Joi.string().min(4).max(30).trim(),
     accessLevel: Joi.number().optional()
 });
 

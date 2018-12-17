@@ -28,6 +28,7 @@ app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/item', itemRouter);
 
+
 // handle unexpected HTTP requests
 app.use('*', (req,res) => {
     return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ message: 'Not Found' });
@@ -35,7 +36,7 @@ app.use('*', (req,res) => {
 
 // handle unexpected errors
 app.use('*', (err, req, res, next) => {
-    return res.status(err.code).json({ message });
+    return res.status(err.code || 500).json({ message: err.message });
 });
 
 // to start the server when this function is called

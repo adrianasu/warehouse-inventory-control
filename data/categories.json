@@ -1,0 +1,5 @@
+{"_id":{"$oid":"5c16e91ebeffe063e414d3f1"},"name":"Music","addedBy":{"$oid":"5c16e91ebeffe063e414d3db"},"__v":0}
+{"_id":{"$oid":"5c16e91ebeffe063e414d3f2"},"name":"Jewelery","addedBy":{"$oid":"5c16e91ebeffe063e414d3dd"},"__v":0}
+{"_id":{"$oid":"5c16e91ebeffe063e414d3f3"},"name":"Books","addedBy":{"$oid":"5c16e91ebeffe063e414d3d8"},"__v":0}
+{"_id":{"$oid":"5c16e91ebeffe063e414d3f4"},"name":"Baby","addedBy":{"$oid":"5c16e91ebeffe063e414d3d9"},"__v":0}
+{"_id":{"$oid":"5c16e91ebeffe063e414d3f5"},"name":"Shoes","addedBy":{"$oid":"5c16e91ebeffe063e414d3d8"},"__v":0}

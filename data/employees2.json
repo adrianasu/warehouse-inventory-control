@@ -1,0 +1,5 @@
+{"_id":{"$oid":"5c16f0209bbae61e1415f7d3"},"employeeId":"246450","firstName":"Edd","lastName":"Block","department":{"$oid":"5c16f0209bbae61e1415f7d1"},"__v":0}
+{"_id":{"$oid":"5c16f0209bbae61e1415f7d4"},"employeeId":"415720","firstName":"Korey","lastName":"Jacobs","department":{"$oid":"5c16f0209bbae61e1415f7d0"},"__v":0}
+{"_id":{"$oid":"5c16f0209bbae61e1415f7d5"},"employeeId":"594291","firstName":"Jovani","lastName":"Wilderman","department":{"$oid":"5c16f0209bbae61e1415f7d1"},"__v":0}
+{"_id":{"$oid":"5c16f0209bbae61e1415f7d6"},"employeeId":"837559","firstName":"Colton","lastName":"Haag","department":{"$oid":"5c16f0209bbae61e1415f7d2"},"__v":0}
+{"_id":{"$oid":"5c16f0209bbae61e1415f7d7"},"employeeId":"554483","firstName":"Myrtice","lastName":"Grant","department":{"$oid":"5c16f0209bbae61e1415f7ce"},"__v":0}

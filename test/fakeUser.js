@@ -13,12 +13,10 @@ const {
     ACCESS_ADMIN
 } = require('../app/user/user.model');
 
-const accessLevel = [ACCESS_BASIC, ACCESS_OVERVIEW, ACCESS_PUBLIC, ACCESS_ADMIN];
-
 function generateTestUser( userAccessLevel = ACCESS_ADMIN ){
     return{
-        name: `${faker.name.firstName()} ${faker.name.lastName()}`,
-        email: faker.internet.email(),
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
         username: faker.internet.userName(),
         password: faker.internet.password(),
         accessLevel: userAccessLevel
@@ -26,22 +24,33 @@ function generateTestUser( userAccessLevel = ACCESS_ADMIN ){
 }
 
 function seedTestUser( testUser, hashedPassword ){
+ 
     return User
     .create({
-        name: testUser.name,
-        email: testUser.email,
+        firstName: testUser.firstName,
+        lastName: testUser.lastName,
         username: testUser.username,
         password: hashedPassword,
         accessLevel: testUser.accessLevel
     });
 }
 
+function generateUsers(){
+    let users = [];
+    for (let x = 0; x < 10; x++) {
+        users.push(generateTestUser());
+    }
+    return users;
+}
+
+
 function signJwToken( user ){
+ 
     return jsonwebtoken.sign({
         user: {
             id: user.id,
-            name: user.name,
-            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
             username: user.username,
             accessLevel: user.accessLevel
         }
@@ -54,15 +63,15 @@ function signJwToken( user ){
     }
     );
 }
-
+ 
 function generateToken( testUser ){
     return User.hashPassword( testUser.password )
         .then( hashedPassword => {
             return seedTestUser( testUser, hashedPassword )
         })
         .then( createdUser => {
-            testUser.id = createdUser.id;
-            return signJwToken( testUser )
+            testUser.id = createdUser._id;
+            return signJwToken( testUser );      
         })
         .catch( err => {
             console.error(err);

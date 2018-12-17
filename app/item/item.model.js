@@ -1,9 +1,27 @@
 const mongoose = require('mongoose');
 const Joi = require('joi');
-const { User } = require('../user/user.model')
 
 mongoose.Promise = global.Promise;
 const ObjectId = mongoose.Schema.Types.ObjectId;
+
+const departmentSchema = mongoose.Schema({
+    departmentName: {
+        type: String,
+        required: true,
+        unique: true,
+        default: "NA"
+    }
+})
+
+const employeeSchema = mongoose.Schema({
+    employeeId: String,
+    firstName: String,
+    lastName: String,
+    department: {
+        type: ObjectId,
+        ref: "Department"
+    }
+})
 
 const categorySchema = mongoose.Schema({
     name: String,
@@ -13,25 +31,9 @@ const categorySchema = mongoose.Schema({
     }
 });
 
-const checkInSchema = mongoose.Schema({
-    user: {
-        type: ObjectId,
-        ref: "User"
-    },
-    barcode: Number,
-    date: Date
-})
-
-const checkOutSchema = mongoose.Schema({
-    user: {
-        type: ObjectId,
-        ref: "User"
-    },
-    barcode: Number,
-    date: Date,
-    status: String
-})
-
+const manufacturerSchema = mongoose.Schema({
+    name: String,
+});
 
 const itemSchema = mongoose.Schema({
     name: {
@@ -46,21 +48,47 @@ const itemSchema = mongoose.Schema({
         type: ObjectId,
         ref: "Category"
     },
-    manufacturer: String,
-    modelNumber: String,
-    serialNumber: Number,
-    registrationDate: Date,
-    checkedOut: {
+    manufacturer: {
         type: ObjectId,
-        ref: "CheckOut"
+        ref: "Manufacturer"
+    },
+    model: String,
+    serialNumber: Number,
+    registered: {
+        date: Date,
+        condition: {
+            type: String,
+            default: "New"
+        }
+    },
+    consummable: Boolean,
+    minimumRequired:{
+        quantity: { 
+            type: Number,
+            default: 0
+        },
+        units: String
+    },
+    checkedOut: {
+        employee: {
+        type: ObjectId,
+        ref: "Employee"
+        },
+        barcode: Number,
+        date: Date,
+        status: String
     },
     checkedIn: {
+        employee: {
         type: ObjectId,
-        ref: "CheckIn"
+        ref: "Employee"
+        },
+        barcode: Number,
+        date: Date
     },
     location: {
-        warehouse: Number,
-        aisle: Number,
+        warehouse: String,
+        aisle: String,
         shelf: Number,
         bin: Number
     },
@@ -71,21 +99,63 @@ const ItemJoiSchema = Joi.object().keys({
     name: Joi.string(),
     barcode: Joi.number(),
     category: Joi.object().keys({
+        _id: Joi.string(),
         name: Joi.string(),
-        addedBy: Joi.string()
+        addedBy: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string().min(1).trim(),
+            lastName: Joi.string().min(1).trim(),
+            username: Joi.string().min(4).max(30).trim(),
+            password: Joi.string().min(7).max(30).trim(),
+            accessLevel: Joi.number().optional(),
+            __v: Joi.number()
+        }),
+        __v: Joi.number()
     }),
-    manufacturer: Joi.string(),
-    modelNumber: Joi.string(),
+    manufacturer: Joi.object().keys({
+        _id: Joi.string(),
+        name: Joi.string(),
+        __v: Joi.number()
+    }),
+    model: Joi.string(),
     serialNumber: Joi.number(),
-    registrationDate: Joi.date(),
+    registered: Joi.object().keys({
+        date: Joi.date(),
+        condition: Joi.string()
+    }),
+    consummable: Joi.boolean(),
+    minimumRequired: Joi.object().keys({
+        quantity: Joi.number(),
+        units: Joi.string()
+    }),
     checkedOut: Joi.object().keys({
-        user: Joi.string(),
+        employee: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(), 
+            department: Joi.object().keys({
+                _id: Joi.string(),
+                departmentName: Joi.string(),
+                __v: Joi.number()
+            }),
+            __v: Joi.number()
+        }),
         date: Joi.date(),
         barcode: Joi.number(),
         status: Joi.string()
     }),
     checkedIn: Joi.object().keys({
-        user: Joi.string(),
+        employee: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(), 
+            department: Joi.object().keys({
+                _id: Joi.string(),
+                departmentName: Joi.string(),
+                __v: Joi.number()
+            }),
+            __v: Joi.number()
+        }),
         date: Joi.date(),
         barcode: Joi.number()
     }),
@@ -104,22 +174,26 @@ itemSchema.methods.serialize = function(){
         barcode: this.barcode,
         category: this.category,
         manufacturer: this.manufacturer,
-        modelNumber: this.modelNumber,
+        model: this.model,
         serialNumber: this.serialNumber,
-        registrationDate: this.registrationDate,
+        registered: this.registered,
+        consummable: this.consummable,
+        minimumRequired: this.minimumRequired,
         checkedOut: this.checkedOut,
         checkedIn: this.checkedIn,
         location: this.location
     }
 }
 
-itemSchema.pre( 'find', function( next ){
-    this.populate( 'category checkedIn checkedOut' );
+const searchableFields = ['barcode', 'name', 'category', 'manufacturer', 'model', 'consummable','checkedOut', 'checkedIn'];
+
+employeeSchema.pre('find', function (next) {
+    this.populate('department');
     next();
 });
 
-itemSchema.pre( 'findOne', function( next ){
-    this.populate( 'category checkedIn checkedOut' );
+employeeSchema.pre('findOne', function (next) {
+    this.populate('department');
     next();
 });
 
@@ -133,40 +207,39 @@ categorySchema.pre( 'findOne', function( next ){
     next();
 });
 
-checkInSchema.pre( 'find', function( next ){
-    this.populate( 'user' );
+itemSchema.pre( 'find', function( next ){
+    this.populate( 'category checkedIn.employee checkedOut.employee manufacturer' );
     next();
 });
 
-checkInSchema.pre( 'findOne', function( next ){
-    this.populate( 'user' );
+itemSchema.pre( 'findOne', function( next ){
+    this.populate( 'category checkedIn.employee checkedOut.employee manufacturer' );
     next();
 });
 
-checkOutSchema.pre( 'find', function( next ){
-    this.populate( 'user' );
-    next();
-});
 
-checkOutSchema.pre( 'findOne', function( next ){
-    this.populate( 'user' );
-    next();
-});
-
-// instance method to calculate the useful life of an item
-
-itemSchema.methods.usefulLife = function(status){
+// TODO: instance method to calculate the useful life of an item
+itemSchema.methods.usefulLife = function( status ){
     if( status === "broken" ){
         return this.checkedOut.date - this.registrationDate;
     };
     return "Unknown";
 }
 
+// TODO: define if an item quantity is lower than the minimum required
+itemSchema.methods.isStockLow = function( actualQty ){
+    if( actualQty < this.minimumRequired ){
+        return true;
+    }
+    return false;
+}
+
 const Item = mongoose.model( "Item", itemSchema );
 const Category = mongoose.model( "Category", categorySchema );
-const CheckIn = mongoose.model( "CheckIn", checkInSchema );
-const CheckOut = mongoose.model( "CheckOut", checkOutSchema );
+const Manufacturer = mongoose.model( "Manufacturer", manufacturerSchema );
+const Employee = mongoose.model("Employee", employeeSchema);
+const Department = mongoose.model("Department", departmentSchema);
 
 module.exports ={
-    Item, Category, CheckIn, CheckOut
+    Item, Category, Manufacturer, Employee, Department, searchableFields, ItemJoiSchema
 };

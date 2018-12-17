@@ -21,9 +21,9 @@ function createJWToken(user) {
 // username and password authentication
 authRouter.post('/login', localPassportMiddleware, (req, res) => {
     const user = req.user.serialize();
-    const jwToken = createJWToken(user);
-    res.json({
-        jwToken,
+    const authToken = createJWToken(user);
+    return res.json({
+        authToken,
         user
     });
 })
@@ -31,9 +31,9 @@ authRouter.post('/login', localPassportMiddleware, (req, res) => {
 // create new JWT when the previous one is about to get expired
 authRouter.post('/refresh', jwtPassportMiddleware, (req, res) => {
     const user = req.user;
-    const jwToken = createJWToken(user);
-    res.json({
-        jwToken,
+    const authToken = createJWToken(user);
+    return res.json({
+        authToken,
         user
     });
 })

@@ -39,7 +39,7 @@ const localStrategy = new LocalStrategy(( username, password, passportVerify ) =
         .catch(error => {
             // execute the passportVerify callback correctly if an error occurred
             if( error.reason === 'LoginError' ){
-                return passportVerify(null, false, error.message);
+                return passportVerify(null, false, error);
             }
             return passportVerify(error, false);
         });
