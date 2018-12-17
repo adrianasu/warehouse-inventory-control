@@ -119,7 +119,7 @@ function generateUsers(){
 function seedItemsDb(){
     let manufacturerIds, categoryIds, departmentIds, employeeIds, userIds;
     let users = generateUsers();
-    // let departments = generateDepartments();
+    let departments = generateDepartments();
 
   
     console.log('Generating users')
@@ -128,7 +128,7 @@ function seedItemsDb(){
         .then(_userIds => {
             userIds =_userIds;
             console.log('Generating departments');
-            return Department.insertMany(generateDepartments())
+            return Department.insertMany(departments)
         })
         .then(_departmentIds => {
             departmentIds = _departmentIds;

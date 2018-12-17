@@ -18,6 +18,22 @@ chai.use(chaiHttp);
 let testUser, jwToken;
 const itemKeys = ["name", "barcode", "model", "serialNumber", "consummable"];
 
+function insertItems( searchTerm ){
+    let newItems = [{name: searchTerm, 
+                    barcode: 456,
+                    model: "abc",
+                    serialNumber: 1230,
+                    consummable: true}, 
+                 {model: searchTerm,
+                    name: "John",
+                    barcode: 123,
+                    serialNumber: 789,
+                    consummable: false                
+                }];
+
+    return Item.insertMany(newItems)
+}
+
 function checkResponse(res, statusCode, resType) {
     expect(res).to.have.status(statusCode);
     expect(res).to.be.json;
@@ -34,7 +50,6 @@ function checkObjectContent( res, itemKeys, newItem ){
 function checkArrayContent( res, itemKeys ){
     expect(res.body).to.have.lengthOf.at.least(1);
     expect(res.body[0]).to.include.keys(itemKeys);
-    expect(res.body[0]).to.not.include.keys('password');
 }
 
 function tearDownDb(){
@@ -56,7 +71,6 @@ describe( 'Items API resource tests', function(){
         return generateToken( testUser )
             .then(function( _jwToken ){
                 jwToken = _jwToken;
-                console.log("TOKEN ITEMTEST ",jwToken);
                 return seedItemsDb();
             })
         
@@ -91,5 +105,60 @@ describe( 'Items API resource tests', function(){
                 console.log( err );
             });
     });
+
+    it("Should not create a new item bc barcode already exists", function(){
+        let newItem = {
+            name: "Hammer",
+            model: "ABC123"
+        }
+        
+        return Item 
+        .findOne()
+        .then( item => {
+            newItem.barcode = item.barcode;
+        
+            return chai.request( app )
+                .post('/api/item')
+                .set('Authorization', `Bearer ${ jwToken }`)
+                .send(newItem)
+                .then( function( res ){
+                    checkResponse( res, HTTP_STATUS_CODES.BAD_REQUEST, 'object' );
+                    expect( res.body ).to.include({err: 'An item with that barcode already exists.'});
+                })
+        })
+        .catch( function( err ){
+             console.log( err )
+        });
+    });
+
+    it('Should return all items', function(){
+        return chai.request( app )
+            .get('/api/item')
+            .then( function( res ){
+                checkResponse( res, HTTP_STATUS_CODES.OK, 'array' );
+                checkArrayContent( res, itemKeys );
+            })
+            .catch( function( err ){
+                console.log( err );
+            });
+    });
+
+    it('Should return at least two items containing the searchTerm in diff properties', function(){
+        let searchTerm = "Zapato";
+        return insertItems( searchTerm )
+        .then( ids => {
+            return chai.request( app )
+            .get(`/api/item/search/${searchTerm}`)
+    
+        })
+        .then( function ( res ) {
+            checkResponse( res, HTTP_STATUS_CODES.OK, 'array' );
+            checkArrayContent( res, itemKeys );
+            expect( res.body ).to.have.lengthOf.at.least( 2 );
+        })
+        .catch( function ( err ) {
+            console.log( err );
+        });
+    })
 })
 
