@@ -61,7 +61,10 @@ const itemSchema = mongoose.Schema({
             default: "New"
         }
     },
-    consummable: Boolean,
+    consummable: {
+        type: Boolean,
+        default: false
+    },
     minimumRequired:{
         quantity: { 
             type: Number,
@@ -93,6 +96,9 @@ const itemSchema = mongoose.Schema({
         bin: Number
     },
 });
+
+// define the fields that will be available for advanced search
+const searchableFields = ["name", "category", "model", "manufacturer", "warehouse", "consummable", "onShelf"];
 
 const ItemJoiSchema = Joi.object().keys({
     _id: Joi.string(),
@@ -185,8 +191,6 @@ itemSchema.methods.serialize = function(){
     }
 }
 
-const searchableFields = ['barcode', 'name', 'category', 'manufacturer', 'model', 'consummable','checkedOut', 'checkedIn'];
-
 employeeSchema.pre('find', function (next) {
     this.populate('department');
     next();
@@ -217,6 +221,13 @@ itemSchema.pre( 'findOne', function( next ){
     next();
 });
 
+// Instance method to determine if an item is on shelf
+itemSchema.methods.isOnShelf = function () {
+    if( this.checkedOut.date < this.checkedIn.date ){
+        return true;
+    }
+    return false;
+}
 
 // TODO: instance method to calculate the useful life of an item
 itemSchema.methods.usefulLife = function( status ){

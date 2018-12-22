@@ -160,5 +160,31 @@ describe( 'Items API resource tests', function(){
             console.log( err );
         });
     })
+
+    it('Advanced search should find an item that contains all the values in the query ', function () {
+        let searchQuery = {
+                            name: "Zapato",
+                            model: "ABC123",
+                            barcode: 123456,
+                            serialNumber: 456789,
+                            consummable: true
+                            };
+
+        return Item
+            .create(searchQuery)
+            .then(ids => {
+            return chai.request(app)
+                .get(`/api/item/advancedSearch?name=${searchQuery.name}&model=${searchQuery.model}&barcode=${searchQuery.barcode}`)
+
+            })
+            .then(function (res) {
+                checkResponse(res, HTTP_STATUS_CODES.OK, 'object');
+                checkObjectContent(res, itemKeys, searchQuery);
+            })
+            .catch(function (err) {
+                console.log(err);
+            });
+    })
+
 })
 

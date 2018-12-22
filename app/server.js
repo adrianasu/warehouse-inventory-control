@@ -12,6 +12,8 @@ const { userRouter } = require('./user/user.router');
 const { authRouter } = require('./auth/auth.router');
 const { localStrategy, jwtStrategy } = require('./auth/auth.strategy');
 const { itemRouter } = require('./item/item.router');
+const { fieldsRouter } = require('./item/fields.router');
+const { categoryRouter } = require('./category/category.router');
 
 passport.use(localStrategy); // configure Passport to use our localStrategy when receiving username/password
 passport.use(jwtStrategy); // configure Passport to use our jwtStrategy when receiving JWTokens
@@ -27,7 +29,8 @@ app.use(express.static('public')); // serve static files inside 'public' folder
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/item', itemRouter);
-
+app.use('/api/searchableFields', fieldsRouter);
+app.use('/api/category', categoryRouter);
 
 // handle unexpected HTTP requests
 app.use('*', (req,res) => {
