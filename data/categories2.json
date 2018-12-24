@@ -1,5 +1,0 @@
-{"_id":{"$oid":"5c16f0209bbae61e1415f7dd"},"name":"Beauty","addedBy":{"$oid":"5c16f0209bbae61e1415f7c9"},"__v":0}
-{"_id":{"$oid":"5c16f0209bbae61e1415f7de"},"name":"Electronics","addedBy":{"$oid":"5c16f0209bbae61e1415f7c4"},"__v":0}
-{"_id":{"$oid":"5c16f0209bbae61e1415f7df"},"name":"Automotive","addedBy":{"$oid":"5c16f0209bbae61e1415f7c8"},"__v":0}
-{"_id":{"$oid":"5c16f0209bbae61e1415f7e0"},"name":"Jewelery","addedBy":{"$oid":"5c16f0209bbae61e1415f7c4"},"__v":0}
-{"_id":{"$oid":"5c16f0209bbae61e1415f7e1"},"name":"Electronics","addedBy":{"$oid":"5c16f0209bbae61e1415f7cd"},"__v":0}

@@ -2,7 +2,8 @@ const faker = require('faker');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const { Item, Category, Manufacturer, Employee, Department } = require('../app/item/item.model');
+const { Item, Employee, Department } = require('../app/item/item.model');
+const { Product, Category, Manufacturer } = require('../app/product/product.model');
 const { User, ACCESS_ADMIN } = require('../app/user/user.model');
 
 function getRandomFromArray( arr ) {
@@ -32,27 +33,33 @@ function generateLocation(){
     }
 }
 
-function generateOneItem(employeeIds, categoryIds, manufacturerIds) {
+function generateOneItem( employeeIds, productIds ) {
     let itemCondition = ['New', 'Used'];
     return {
-        name: faker.commerce.productName(),
-        barcode: faker.random.number(1000), // number between 0 and 1000
-        category: getRandomFromArray(categoryIds),
-        manufacturer: getRandomFromArray(manufacturerIds),
-        model: faker.random.alphaNumeric(7),
-        serialNumber: faker.random.number(10000),
+        product: getRandomFromArray(productIds),
+        barcode: faker.random.number(100000), // number between 0 and 1000
+        serialNumber: faker.random.number(100000),
         registered: {
             date: faker.date.past(),
             condition: getRandomFromArray(itemCondition)
         },
+        checkedOut: generateCheck( employeeIds, "out" ),
+        checkedIn: generateCheck( employeeIds ),
+        location: generateLocation()
+    }
+}
+
+function generateOneProduct( categoryIds, manufacturerIds ) {
+    return {
+        name: faker.commerce.productName(),
+        category: getRandomFromArray(categoryIds),
+        manufacturer: getRandomFromArray(manufacturerIds),
+        model: faker.random.alphaNumeric(7),
         consummable: faker.random.boolean(),
         minimumRequired: {
             quantity: faker.random.number(5),
             units: "pieces"
-        },
-        checkedOut: generateCheck( employeeIds, "out" ),
-        checkedIn: generateCheck( employeeIds ),
-        location: generateLocation()
+        }
     }
 }
 
@@ -117,10 +124,9 @@ function generateUsers(){
 }
 
 function seedItemsDb(){
-    let manufacturerIds, categoryIds, departmentIds, employeeIds, userIds;
+    let manufacturerIds, categoryIds, departmentIds, employeeIds, userIds, productIds;
     let users = generateUsers();
     let departments = generateDepartments();
-
   
     console.log('Generating users')
     return User
@@ -146,10 +152,19 @@ function seedItemsDb(){
             return Category.insertMany(generateCategories(userIds))
         })
         .then(_categoryIds => {
-            let items = [];
+            let products = [];
             categoryIds = _categoryIds;
-            for( let x=0; x<15; x++ ){
-                items.push(generateOneItem(employeeIds, categoryIds, manufacturerIds));
+            for (let x = 0; x < 15; x++) {
+                products.push(generateOneProduct(categoryIds, manufacturerIds));
+            }
+            console.log('Generating products');
+            return Product.insertMany(products);
+        })
+        .then(_productIds => {
+            let items = [];
+            productIds = _productIds;
+            for( let x=0; x<40; x++ ){
+                items.push(generateOneItem(employeeIds, productIds));
             }
             console.log('Generating items');
             return Item.insertMany(items);
@@ -159,5 +174,5 @@ function seedItemsDb(){
 }
 
 module.exports = {
-    seedItemsDb, generateOneItem
+    seedItemsDb
 }

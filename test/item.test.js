@@ -16,19 +16,23 @@ const expect = chai.expect;
 chai.use(chaiHttp);
 
 let testUser, jwToken;
-const itemKeys = ["name", "barcode", "model", "serialNumber", "consummable"];
+const itemKeys = ["barcode", "serialNumber"];
 
 function insertItems( searchTerm ){
-    let newItems = [{name: searchTerm, 
-                    barcode: 456,
-                    model: "abc",
+    let newItems = [{
+                    barcode: searchTerm,
                     serialNumber: 1230,
-                    consummable: true}, 
-                 {model: searchTerm,
-                    name: "John",
+                    registered: {
+                        date: new Date('2018'),
+                        condition: "Broken"
+                    }}, 
+                 {
                     barcode: 123,
-                    serialNumber: 789,
-                    consummable: false                
+                    serialNumber: searchTerm,
+                    registered: {
+                        date: new Date('2018'),
+                        condition: "In-use"
+                    }              
                 }];
 
     return Item.insertMany(newItems)
@@ -86,11 +90,12 @@ describe( 'Items API resource tests', function(){
 
     it( 'Should create a new item', function(){
        let newItem = {
-        name: "Hammer",
         barcode: 123456,
-        model: "ABC123",
         serialNumber: 567890,
-        consummable: false,
+        registered: {
+            date: new Date('2018'),
+            condition: "New"
+        }
        }
     
         return chai.request( app )
@@ -108,8 +113,7 @@ describe( 'Items API resource tests', function(){
 
     it("Should not create a new item bc barcode already exists", function(){
         let newItem = {
-            name: "Hammer",
-            model: "ABC123"
+            serialNumber: 9876,
         }
         
         return Item 
@@ -144,7 +148,7 @@ describe( 'Items API resource tests', function(){
     });
 
     it('Should return at least two items containing the searchTerm in diff properties', function(){
-        let searchTerm = "Zapato";
+        let searchTerm = 565656;
         return insertItems( searchTerm )
         .then( ids => {
             return chai.request( app )
@@ -161,30 +165,30 @@ describe( 'Items API resource tests', function(){
         });
     })
 
-    it('Advanced search should find an item that contains all the values in the query ', function () {
-        let searchQuery = {
-                            name: "Zapato",
-                            model: "ABC123",
-                            barcode: 123456,
-                            serialNumber: 456789,
-                            consummable: true
-                            };
+    // it('Advanced search should find an item that contains all the values in the query ', function () {
+    //     let searchQuery = {
+    //                         name: "Zapato",
+    //                         model: "ABC123",
+    //                         barcode: 123456,
+    //                         serialNumber: 456789,
+    //                         consummable: true
+    //                         };
 
-        return Item
-            .create(searchQuery)
-            .then(ids => {
-            return chai.request(app)
-                .get(`/api/item/advancedSearch?name=${searchQuery.name}&model=${searchQuery.model}&barcode=${searchQuery.barcode}`)
+    //     return Item
+    //         .create(searchQuery)
+    //         .then(ids => {
+    //         return chai.request(app)
+    //             .get(`/api/item/advancedSearch?name=${searchQuery.name}&model=${searchQuery.model}&barcode=${searchQuery.barcode}`)
 
-            })
-            .then(function (res) {
-                checkResponse(res, HTTP_STATUS_CODES.OK, 'object');
-                checkObjectContent(res, itemKeys, searchQuery);
-            })
-            .catch(function (err) {
-                console.log(err);
-            });
-    })
+    //         })
+    //         .then(function (res) {
+    //             checkResponse(res, HTTP_STATUS_CODES.OK, 'object');
+    //             checkObjectContent(res, itemKeys, searchQuery);
+    //         })
+    //         .catch(function (err) {
+    //             console.log(err);
+    //         });
+    // })
 
 })
 
