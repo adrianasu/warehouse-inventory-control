@@ -43,7 +43,7 @@ const itemSchema = mongoose.Schema({
             default: "New"
         }
     },
-    checkedOut: {
+    checkedOut: [{
         employee: {
         type: ObjectId,
         ref: "Employee"
@@ -54,15 +54,15 @@ const itemSchema = mongoose.Schema({
             type: String,
             default: "In-use" // in-use, lost, stolen, broken
         }  
-    },
-    checkedIn: {
+    }],
+    checkedIn: [{
         employee: {
         type: ObjectId,
         ref: "Employee"
         },
         barcode: Number,
         date: Date
-    },
+    }],
     location: {
         warehouse: String,
         aisle: String,
@@ -110,7 +110,8 @@ const ItemJoiSchema = Joi.object().keys({
         date: Joi.date(),
         condition: Joi.string()
     }),
-    checkedOut: Joi.object().keys({
+    checkedOut: Joi.array().items(
+        Joi.object().keys({
         employee: Joi.object().keys({
             _id: Joi.string(),
             firstName: Joi.string(),
@@ -125,8 +126,9 @@ const ItemJoiSchema = Joi.object().keys({
         date: Joi.date(),
         barcode: Joi.number(),
         status: Joi.string()
-    }),
-    checkedIn: Joi.object().keys({
+    })),
+    checkedIn: Joi.array().items(
+        Joi.object().keys({
         employee: Joi.object().keys({
             _id: Joi.string(),
             firstName: Joi.string(),
@@ -140,17 +142,18 @@ const ItemJoiSchema = Joi.object().keys({
         }),
         date: Joi.date(),
         barcode: Joi.number()
-    }),
+    })),
     location: Joi.object().keys({
         warehouse: Joi.string(),
-        aisle: Joi.number(),
+        aisle: Joi.string(),
         shelf: Joi.number(),
         bin: Joi.number()
     })
 })
 
 const UpdateItemJoiSchema = Joi.object().keys({
-    checkedOut: Joi.object().keys({
+    checkedOut: Joi.array().items(
+        Joi.object().keys({
         employee: Joi.object().keys({
             _id: Joi.string(),
             firstName: Joi.string(),
@@ -165,8 +168,9 @@ const UpdateItemJoiSchema = Joi.object().keys({
         date: Joi.date(),
         barcode: Joi.number(),
         status: Joi.string()
-    }),
-    checkedIn: Joi.object().keys({
+    })),
+    checkedIn: Joi.array().items(
+        Joi.object().keys({
         employee: Joi.object().keys({
             _id: Joi.string(),
             firstName: Joi.string(),
@@ -180,10 +184,10 @@ const UpdateItemJoiSchema = Joi.object().keys({
         }),
         date: Joi.date(),
         barcode: Joi.number()
-    }),
+    })),
     location: Joi.object().keys({
         warehouse: Joi.string(),
-        aisle: Joi.number(),
+        aisle: Joi.string(),
         shelf: Joi.number(),
         bin: Joi.number()
     })
@@ -203,32 +207,48 @@ itemSchema.methods.serialize = function(){
     }
 }
 
+// Returns the number of days since its registration until 
+// declared as broken (inside the checkedOut.status field)
 itemSchema.methods.calculateUsefulLife = function(){
-    if( this.checkedOut.status !== "broken"){
+
+    if( this.checkedOut.length === 0 ||
+        this.checkedOut[this.checkedOut.length-1].status !== "broken"){
         return "NA";
     }
-    // Returns the number of days since its registration until declared as broken
-    return Math.floor((this.checkedOut.date - this.registered.date)/(1000*60*60*24));
+    return Math.floor((this.checkedOut[this.checkedOut.length - 1].date - this.registered.date) / (1000 * 60 * 60 * 24));
 }
 
 itemSchema.methods.serializeWithUsefulLife = function () {
     return {
         id: this._id,
-        name: this.name,
-        category: this.category,
-        manufacturer: this.manufacturer,
-        model: this.model,
-        consummable: this.consummable,
-        minimumRequired: this.minimumRequired,
+        barcode: this.barcode,
+        product: this.product,
+        serialNumber: this.serialNumber,
+        registered: this.registered,
+        checkedOut: this.checkedOut,
+        checkedIn: this.checkedIn,
+        location: this.location,
         usefulLife: this.calculateUsefulLife()
     }
 }
 
 // Instance method to determine if an item is on shelf
 itemSchema.methods.isOnShelf = function () {
-    if (this.checkedOut.date < this.checkedIn.date) {
-        return "true";
+    let lastCheckedOut, lastCheckedIn;
+    // If checkedOut/checkedIn arrays aren't empty, get
+    // their last element number
+    if( this.checkedOut.length > 0){
+        lastCheckedOut = this.checkedOut.length-1;
     }
+    if (this.checkedIn.length > 0) {
+        lastCheckedIn = this.checkedIn.length-1;
+    }
+    // If item has never been checked out or if its more recent operation
+    // is checked in then it will be considered to be on shelf
+    if (this.checkedOut.length === 0
+        || this.checkedOut[lastCheckedOut].date < this.checkedIn[lastCheckedIn].date) {
+        return "true";
+    } 
     return "false";
 }
 
@@ -252,13 +272,7 @@ itemSchema.pre( 'findOne', function( next ){
     next();
 });
 
-// Define if an item quantity is lower than the minimum required
-itemSchema.methods.isStockLow = function(){
-    if( actualQty < this.minimumRequired ){
-        return true;
-    }
-    return false;
-}
+
 
 const Item = mongoose.model( "Item", itemSchema );
 const Employee = mongoose.model("Employee", employeeSchema);

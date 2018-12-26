@@ -45,7 +45,7 @@ const productSchema = mongoose.Schema({
         ref: "Category"
     }
 });
-
+ 
 const ProductJoiSchema = Joi.object().keys({
     _id: Joi.string(),
     name: Joi.string(),
@@ -61,6 +61,7 @@ const ProductJoiSchema = Joi.object().keys({
         units: Joi.string()
     }),
     category: Joi.object().keys({
+        _id: Joi.string(),
         name: Joi.string(),
         addedBy: Joi.object().keys({
             _id: Joi.string(),
@@ -75,7 +76,7 @@ const ProductJoiSchema = Joi.object().keys({
     __v: Joi.number()
 });
 
-manufacturerSchema.methods.serialize = function() {
+productSchema.methods.serialize = function() {
     return {
         id: this._id,
         name: this.name,
@@ -86,6 +87,15 @@ manufacturerSchema.methods.serialize = function() {
         category: this.category
     }
 }
+
+// Define if an product quantity is lower than the minimum required
+productSchema.methods.isStockLow = function (product) {
+    if (product.count < this.minimumRequired.quantity) {
+        return true;
+    }
+    return false;
+}
+
 
 categorySchema.pre('find', function (next) {
     this.populate('user');

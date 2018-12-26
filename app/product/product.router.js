@@ -3,39 +3,26 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Product } = require('../item/item.model');
+const { Product, ProductJoiSchema } = require('../product/product.model');
 
 const productRouter = express.Router();
 
-// schema to validate product content
-const ProductJoiSchema = Joi.object().keys({
-    _id: Joi.string(),
-    __v: Joi.number(),
-    name: Joi.string(),
-    addedBy: Joi.object().keys({
-        _id: Joi.string(),
-        firstName: Joi.string(),
-        lastName: Joi.string(),
-        username: Joi.string(),
-        accessLevel: Joi.number()
-    })
-});
 
-// get all categories
-ProductRouter.get('/', (req, res) => {
+// get all products
+productRouter.get('/', (req, res) => {
     return Product
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
-        .then(categories => {
-            console.log('Getting all categories');
-            return res.status(HTTP_STATUS_CODES.OK).json(categories);
+        .then( products => {
+            console.log('Getting all  products');
+            return res.status(HTTP_STATUS_CODES.OK).json(products);
         })
         .catch(err => {
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
         });
 });
 
-// create Product
-ProductRouter.post('/', 
+// create a product
+productRouter.post('/', 
     jwtPassportMiddleware, 
     User.hasAccess(User.ACCESS_ADMIN), 
     (req, res ) => {
@@ -43,9 +30,12 @@ ProductRouter.post('/',
     // middleware in server.js
     const newProduct = {
         name: req.body.name,
-        addedBy: req.body.addedBy
+        manufacturer: req.body.manufacturer,
+        model: req.body.model,
+        consummable: req.body.consummable,
+        minimumRequired: req.body.minimumRequired,
+        category: req.body.category,
     };
-
     // validate newProduct data using Joi schema
     const validation = Joi.validate( newProduct, ProductJoiSchema );
     if( validation.error ){
@@ -54,22 +44,22 @@ ProductRouter.post('/',
         });
     }
 
-    // check if Product already exists
+    // check if product already exists
     return Product
         .findOne({
             name: req.body.name
         })
-        .then( Product => {
-            if( Product ){
+        .then( product => {
+            if( product ){
                 return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: `A Product ${req.body.name} already exists.`
+                    message: `A product ${req.body.name} already exists.`
                 });
             }
             // attempt to create a new Product
             return Product
                 .create( newProduct )
                 .then( createdProduct => {
-                    console.log(`Creating new Product`);
+                    console.log(`Creating new product`);
                     return res.status(HTTP_STATUS_CODES.CREATED).json(createdProduct);
                 })
                 .catch(err => {
@@ -78,44 +68,41 @@ ProductRouter.post('/',
         })
 })
 
-
-// get products whose stock is low (its minimumRequired is > 0
-// and its current value is less than that)
-productRouter.get('/lowStock',
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
-    (req, res) => {
-
-        return Product
-            .find({
-                minimumRequired: {
-                    $gt: 0
-                }
-            })
-            .then(items => {
-                console.log("ITEMS ", items.length);
-                return items.filter(item => item.isStockLow() === true)
-            })
-            .then(items => {
-                console.log("ITEMS 2", items.length);
-                return items.map(item => item.serialize())
-            })
-            .then(serializedItems => {
-                return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
-            })
-    })
+// get product by Id
+productRouter.get('/:productId',
+        // jwtPassportMiddleware, 
+        // User.hasAccess( User.ACCESS_PUBLIC ), 
+        (req, res) => {
+        
+    return Product
+        .findOne({
+            _id: req.params.productId
+        })
+        .then(product => {
+      
+            console.log(`Getting item with id: ${req.params.productId}`);
+            if( !product ){
+                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
+                    message: 'No product found with that id.'
+                });
+            }
+            return res.status( HTTP_STATUS_CODES.OK ).json( product.serialize() );
+        })
+        .catch(err => {
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
+        })
+});
 
 
 
-
-
-// update Product by Id
-ProductRouter.put('/:ProductId', jwtPassportMiddleware,
+// update product by Id
+productRouter.put('/:productId', jwtPassportMiddleware,
     User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
+        //console.log("BODY ", req.body);
         // check that id in request body matches id in request path
-        if (req.params.ProductId !== req.body.id) {
-            const message = `Request path id ${req.params.ProductId} and request body id ${req.body.ProductId} must match`;
+        if (req.params.productId !== req.body.id) {
+            const message = `Request path id ${req.params.productId} and request body id ${req.body.id} must match`;
             console.error(message);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message
@@ -123,7 +110,7 @@ ProductRouter.put('/:ProductId', jwtPassportMiddleware,
         }
 
     
-        const updateableFields = ["name", "addedBy"];
+        const updateableFields = ["name", "manufacturer", "model", "consummable", "minimumRequired", "category"];
         // check what fields were sent in the request body to update
         const toUpdate = {};
         updateableFields.forEach(field => {
@@ -148,17 +135,17 @@ ProductRouter.put('/:ProductId', jwtPassportMiddleware,
             });
         }
 
-        Product
+        return Product
             // $set operator replaces the value of a field with the specified value
             .findOneAndUpdate({
-                _id: req.params.ProductId
+                _id: req.params.productId
             }, {
                 $set: toUpdate
             }, {
                 new: true
             })
             .then(updatedProduct => {
-                console.log(`Updating Product with id: \`${req.params.ProductId}\``);
+                console.log(`Updating product with id: \`${req.params.productId}\``);
                 return res.status(HTTP_STATUS_CODES.OK).json(updatedProduct);
             })
             .catch(err => {
@@ -166,19 +153,19 @@ ProductRouter.put('/:ProductId', jwtPassportMiddleware,
             });
     })
 
-// delete Product
-ProductRouter.delete('/:ProductId',
+// delete product
+productRouter.delete('/:productId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
         return Product
             .findOneAndDelete({
-                _id: req.params.ProductId
+                _id: req.params.productId
             })
             .then(deletedProduct => {
-                console.log(`Deleting Product with id: \`${req.params.ProductId}\``);
+                console.log(`Deleting Product with id: \`${req.params.productId}\``);
                 return res.status(HTTP_STATUS_CODES.OK).json({
-                    deleted: `${req.params.ProductId}`,
+                    deleted: `${req.params.productId}`,
                     OK: "true"
                 });
             })
@@ -188,5 +175,5 @@ ProductRouter.delete('/:ProductId',
 
     });
 
-module.exports = { ProductRouter };
+module.exports = { productRouter };
 

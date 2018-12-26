@@ -3,90 +3,91 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Manufacturer } = require('../product/product.model');
+const { Category } = require('../product/product.model');
+ 
+const categoryRouter = express.Router();
 
-const manufacturerRouter = express.Router();
-
-// schema to validate manufacturer content
-const ManufacturerJoiSchema = Joi.object().keys({
+// schema to validate category content
+const CategoryJoiSchema = Joi.object().keys({
     _id: Joi.string(),
     __v: Joi.number(),
     name: Joi.string()
 });
 
-// get all manufacturers
-manufacturerRouter.get('/', (req, res) => {
-    return Manufacturer
+// get all categories
+categoryRouter.get('/', (req, res) => {
+    return Category
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
-        .then(manufacturers => {
-            console.log('Getting all manufacturers');
-            return res.status(HTTP_STATUS_CODES.OK).json(manufacturers);
+        .then(categories => {
+            console.log('Getting all categories');
+            return res.status(HTTP_STATUS_CODES.OK).json(categories);
         })
         .catch(err => {
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
         });
 });
 
-// get manufacturer by Id
-manufacturerRouter.get('/:manufacturerId',
+// get category by Id
+categoryRouter.get('/:categoryId',
         // jwtPassportMiddleware, 
         // User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
-        
-    return Manufacturer
-        .findOne({
-            _id: req.params.manufacturerId
-        })
-        .then(manufacturer => {
-            console.log(`Getting item with id: ${req.params.manufacturerId}`);
-            if( !manufacturer ){
+            return Category
+            .findOne({
+                _id: req.params.categoryId
+            })
+            .then(category => {
+              
+            console.log(`Getting category with id: ${req.params.categoryId}`);
+            if( !category ){
                 return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: 'No manufacturer found with that id.'
+                    message: 'No category found with that id.'
                 });
             }
-            return res.status( HTTP_STATUS_CODES.OK ).json( manufacturer );
+            return res.status( HTTP_STATUS_CODES.OK ).json( category );
         })
         .catch(err => {
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
         })
 });
 
-// create manufacturer
-manufacturerRouter.post('/', 
+
+// create category
+categoryRouter.post('/', 
    // jwtPassportMiddleware, 
   //  User.hasAccess(User.ACCESS_ADMIN), 
     (req, res ) => {
     // we can access req,body payload bc we defined express.json
     // middleware in server.js
-    const newManufacturer = {
+    const newCategory = {
         name: req.body.name
     };
 
-    // validate newmanufacturer data using Joi schema
-    const validation = Joi.validate( newManufacturer, ManufacturerJoiSchema );
+    // validate newcategory data using Joi schema
+    const validation = Joi.validate( newCategory, CategoryJoiSchema );
     if( validation.error ){
         return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
             message: validation.error.details[0].message
         });
     }
 
-    // check if manufacturer already exists
-    return Manufacturer
+    // check if category already exists
+    return Category
         .findOne({
             name: req.body.name
         })
-        .then( manufacturer => {
-            if( manufacturer ){
+        .then( category => {
+            if( category ){
                 return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: `A manufacturer ${req.body.name} already exists.`
+                    message: `A category ${req.body.name} already exists.`
                 });
             }
-            // attempt to create a new manufacturer
-            return Manufacturer
-                .create( newManufacturer )
-                .then( createdManufacturer => {
-                    console.log(`Creating new manufacturer`);
-                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdManufacturer);
+            // attempt to create a new category
+            return Category
+                .create( newCategory )
+                .then( createdCategory => {
+                    console.log(`Creating new category`);
+                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdCategory);
                 })
                 .catch(err => {
                     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -94,8 +95,8 @@ manufacturerRouter.post('/',
         })
 })
 
-// update manufacturer by Id
-manufacturerRouter.put('/:manufacturerId', 
+// update category by Id
+categoryRouter.put('/:categoryId', 
     //jwtPassportMiddleware,
     //  User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
@@ -104,8 +105,8 @@ manufacturerRouter.put('/:manufacturerId',
         }
 
         // check that id in request body matches id in request path
-        if (req.params.manufacturerId !== req.body.id) {
-            const message = `Request path id ${req.params.manufacturerId} and request body id ${req.body.manufacturerId} must match`;
+        if (req.params.categoryId !== req.body.id) {
+            const message = `Request path id ${req.params.categoryId} and request body id ${req.body.categoryId} must match`;
             console.error(message);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message
@@ -121,7 +122,7 @@ manufacturerRouter.put('/:manufacturerId',
             });
         }
 
-        const validation = Joi.validate(toUpdate, ManufacturerJoiSchema);
+        const validation = Joi.validate(toUpdate, CategoryJoiSchema);
         if (validation.error) {
             console.log(validation.error);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
@@ -129,18 +130,18 @@ manufacturerRouter.put('/:manufacturerId',
             });
         }
 
-        Manufacturer
+        Category
             // $set operator replaces the value of a field with the specified value
             .findOneAndUpdate({
-                _id: req.params.manufacturerId
+                _id: req.params.categoryId
             }, {
                 $set: toUpdate
             }, {
                 new: true
             })
-            .then(updatedManufacturer => {
-                console.log(`Updating manufacturer with id: \`${req.params.manufacturerId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedManufacturer);
+            .then(updatedCategory => {
+                console.log(`Updating category with id: \`${req.params.categoryId}\``);
+                return res.status(HTTP_STATUS_CODES.OK).json(updatedCategory);
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -148,19 +149,19 @@ manufacturerRouter.put('/:manufacturerId',
     }
 )
 
-// delete manufacturer
-manufacturerRouter.delete('/:manufacturerId',
+// delete category
+categoryRouter.delete('/:categoryId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        return Manufacturer
+        return Category
             .findOneAndDelete({
-                _id: req.params.manufacturerId
+                _id: req.params.categoryId
             })
-            .then(deletedManufacturer => {
-                console.log(`Deleting manufacturer with id: \`${req.params.manufacturerId}\``);
+            .then(deletedCategory => {
+                console.log(`Deleting category with id: \`${req.params.categoryId}\``);
                 return res.status(HTTP_STATUS_CODES.OK).json({
-                    deleted: `${req.params.manufacturerId}`,
+                    deleted: `${req.params.categoryId}`,
                     OK: "true"
                 });
             })
@@ -170,4 +171,4 @@ manufacturerRouter.delete('/:manufacturerId',
 
     });
 
-module.exports = { manufacturerRouter };
+module.exports = { categoryRouter };

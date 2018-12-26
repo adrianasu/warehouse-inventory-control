@@ -9,6 +9,19 @@ const { Product, Category, Manufacturer } = require('../product/product.model');
 
 const itemRouter = express.Router();
 
+const CheckInJoiSchema = Joi.object().keys({
+            employee: Joi.string(), 
+             barcode: Joi.number(),
+            date: Joi.date()
+        });
+
+const CheckOutJoiSchema = Joi.object().keys({
+    employee: Joi.string(),
+    date: Joi.date(),
+    barcode: Joi.number(),
+    status: Joi.string()
+})
+
 function getCollectionIdsWithOR(searchQuery, collectionName) {
     return collectionName
         .find({ $or: searchQuery })
@@ -119,7 +132,6 @@ function groupQueryByCollections( requestedQuery ){
     if( query.onShelf !== "NA"){
         queryArray.push({ onShelf: query.onShelf });
     }
-    console.log("ARRAY ", queryArray);
 
     return queryArray;
 }
@@ -497,7 +509,6 @@ itemRouter.get('/advancedSearch', (req, res) => {
   //getItems(req.query)
     return getItems( req.query )
         .then(serializedItems => {
-            console.log("HERE 10", serializedItems.length);
                 return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
         })
         .catch(err => {
@@ -587,12 +598,12 @@ itemRouter.get('/search/:searchTerm', (req, res) => {
 });
 
 // get lists of all the warehouses 
-itemRouter.get('/warehouses', (req, res) => {
+itemRouter.get('/warehouse', (req, res) => {
     
     return Item
-        .distinct( warehouses ) // returns an array with all the  different values of that field 
+        .distinct( 'location.warehouse' ) // returns an array  
         .then(list => {
-            console.log(`Getting all ${fieldName}s`);
+            console.log(`Getting all warehouses`);
             return res.status(HTTP_STATUS_CODES.OK).json(list.sort());
         })
         .catch(err => {
@@ -606,9 +617,10 @@ itemRouter.get('/usefulLife',
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_PUBLIC ), 
     ( req, res ) => {
-
+        
     return Item
         .find()
+        .sort('product') // sort items by product
         .then( items => {
             return items.map( item => item.serializeWithUsefulLife())
         })
@@ -620,7 +632,7 @@ itemRouter.get('/usefulLife',
         })
 })
 
-// get items by availability (onShelf: true or false)
+// get items that are or are not on shelf (onShelf: true or false)
 itemRouter.get('/onShelf/:booleanValue', 
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_PUBLIC ), 
@@ -630,6 +642,7 @@ itemRouter.get('/onShelf/:booleanValue',
 
     return Item
         .find()
+        .sort('product') // sort items by product
         .then( items => {       
             return items.filter( item => item.isOnShelf() === booleanVal )
         })
@@ -655,7 +668,13 @@ itemRouter.get('/:itemId',
             _id: req.params.itemId
         })
         .then(item => {
+      
             console.log(`Getting item with id: ${req.params.itemId}`);
+            if( !item ){
+                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
+                    message: 'No item found with that id.'
+                });
+            }
             return res.status( HTTP_STATUS_CODES.OK ).json( item.serialize() );
         })
         .catch(err => {
@@ -670,18 +689,18 @@ itemRouter.put('/:itemId',
         (req, res) => {
 
         // check that id in request body matches id in request path
-    if (req.params.itemId !== req.body.itemId) {
-        const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
+    if (req.params.itemId !== req.body.id) {
+        const message = `Request path id ${req.params.itemId} and request body id ${req.body.id} must match`;
         console.error(message);
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-            err: message
+            message
         });
     }
 
     // we only support a subset of fields being updateable
     // if the user sent over any of them 
     // we update those values on the database
-    const updateableFields = ["location", "checkedOut", "checkedIn"];
+    const updateableFields = ["location"];
     // check what fields were sent in the request body to update
     const toUpdate = {};
     updateableFields.forEach(field => {
@@ -723,6 +742,127 @@ itemRouter.put('/:itemId',
         });
     });
 
+// checkIn an item
+itemRouter.put('/checkIn/:itemId',
+    // jwtPassportMiddleware, 
+    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    (req, res) => {
+
+        let checkInData = {
+            employee: req.body.employee,
+            date: req.body.date,
+            barcode: req.body.barcode
+        }
+
+        // check that id in request body matches id in request path
+        if (req.params.itemId !== req.body.itemId) {
+            const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
+            console.error(message);
+            return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+                message
+            });
+        }
+
+        // if request body doesn't contain both employee and date
+        // fields, send error message
+        const requiredFields = ["employee", "date"];
+    
+        requiredFields.forEach(field => {
+            if (!field in req.body) {
+                const message = `Missing ${field} in request body`;
+                console.error(message);
+                return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+                    message
+                });
+            };
+        })
+
+        const validation = Joi.validate(checkInData, CheckInJoiSchema);
+        if (validation.error) {
+            return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+                message: validation.error.details[0].message
+            });
+        }
+
+        return Item
+            .findOneAndUpdate({
+                _id: req.params.itemId
+            }, {
+                $push: { checkedIn: checkInData }  // Mongoose only supports push. So when looking for the last check in look for date or  last in the array!!!!
+            },
+            {
+                new: true  // This option will return the updated item
+            })
+            .then(item => {
+                console.log(`Checking in item with id: ${req.params.itemId}`);
+                return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
+            })
+            .catch(err => {
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: err });
+            });
+    });
+
+// checkOut an item
+itemRouter.put('/checkOut/:itemId',
+    // jwtPassportMiddleware, 
+    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    (req, res) => {
+
+        let checkOutData = {
+            employee: req.body.employee,
+            date: req.body.date,
+            status: req.body.status
+        }
+
+        // check that id in request body matches id in request path
+        if (req.params.itemId !== req.body.itemId) {
+            const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
+            console.error(message);
+            return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+                message
+            });
+        }
+
+        // if request body doesn't contain both employee and date
+        // fields, send error message
+        const requiredFields = ["employee", "date"];
+    
+        requiredFields.forEach(field => {
+            if (!field in req.body) {
+                const message = `Missing ${field} in request body`;
+                console.error(message);
+                return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+                    message
+                });
+            };
+        })
+
+        const validation = Joi.validate(checkOutData, CheckOutJoiSchema);
+        if (validation.error) {
+            return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+                message: validation.error.details[0].message
+            });
+        }
+
+        return Item
+            .findOneAndUpdate({
+                _id: req.params.itemId
+            }, {
+                $push: { checkedOut: checkOutData
+            }
+            },{
+                new: true // This option will return the updated item
+            })
+            .then(item => {
+                console.log(`Checking out item with id: ${req.params.itemId}`);
+                return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
+            })
+            .catch(err => {
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+            });
+    });
+
+
 // delete item by Id
 itemRouter.delete('/:itemId',
     // jwtPassportMiddleware, 
@@ -743,5 +883,35 @@ itemRouter.delete('/:itemId',
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
             })
     });
+
+
+
+    // get products with low stock (its minimumRequired is > 0
+    // and its current quantity is less than that)
+    itemRouter.get('/product/lowStock',
+        // jwtPassportMiddleware, 
+        // User.hasAccess( User.ACCESS_PUBLIC ), 
+        (req, res) => {
+console.log("LOW");
+            return Item
+                .aggregate([{
+                    $group: { 
+                        _id: "$product",
+                        count: { $sum: 1 },
+                        // $cond: { if: { $gt: ["$product.minimumRequired.quantity", "$count"]},
+                        //     then: { $push: { lowStock: true}},
+                        //     else: {$push: { lowStock: false}}
+                    // }
+                }}])
+                .then(products => {
+                    
+                   console.log("PROD ", products.count);
+                    //return products.filter( product => product.isStockLow( product ))
+                // })
+                // .then(lowStockProducts =>{                    
+                    return res.status(HTTP_STATUS_CODES.OK).json(lowStockProducts);
+                })
+        })
+
 
 module.exports = { itemRouter };
