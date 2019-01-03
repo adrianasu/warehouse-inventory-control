@@ -50,12 +50,12 @@ const itemSchema = mongoose.Schema({
         },
         barcode: Number,
         date: Date,
-        status: {
+        condition: {
             type: String,
             default: "In-use" // in-use, lost, stolen, broken
         }  
     }],
-    checkedIn: [{
+    checkedIn: [{  
         employee: {
         type: ObjectId,
         ref: "Employee"
@@ -68,7 +68,8 @@ const itemSchema = mongoose.Schema({
         aisle: String,
         shelf: Number,
         bin: Number
-    }
+    },
+    isCheckedOut: Boolean,
 });
 
 // define the fields that will be available for advanced search
@@ -125,7 +126,7 @@ const ItemJoiSchema = Joi.object().keys({
         }),
         date: Joi.date(),
         barcode: Joi.number(),
-        status: Joi.string()
+        condition: Joi.string()
     })),
     checkedIn: Joi.array().items(
         Joi.object().keys({
@@ -148,7 +149,8 @@ const ItemJoiSchema = Joi.object().keys({
         aisle: Joi.string(),
         shelf: Joi.number(),
         bin: Joi.number()
-    })
+    }),
+    isCheckedOut: Joi.boolean()
 })
 
 const UpdateItemJoiSchema = Joi.object().keys({
@@ -167,7 +169,7 @@ const UpdateItemJoiSchema = Joi.object().keys({
         }),
         date: Joi.date(),
         barcode: Joi.number(),
-        status: Joi.string()
+        condition: Joi.string()
     })),
     checkedIn: Joi.array().items(
         Joi.object().keys({
@@ -190,7 +192,8 @@ const UpdateItemJoiSchema = Joi.object().keys({
         aisle: Joi.string(),
         shelf: Joi.number(),
         bin: Joi.number()
-    })
+    }),
+    isCheckedOut: Joi.boolean()
 })
 
 
@@ -203,16 +206,16 @@ itemSchema.methods.serialize = function(){
         registered: this.registered,
         checkedOut: this.checkedOut,
         checkedIn: this.checkedIn,
-        location: this.location
+        location: this.location,
+        isCheckedOut: this.isCheckedOut 
     }
 }
 
 // Returns the number of days since its registration until 
 // declared as broken (inside the checkedOut.status field)
 itemSchema.methods.calculateUsefulLife = function(){
-
     if( this.checkedOut.length === 0 ||
-        this.checkedOut[this.checkedOut.length-1].status !== "broken"){
+        this.checkedOut[this.checkedOut.length-1].condition !== "broken"){
         return "NA";
     }
     return Math.floor((this.checkedOut[this.checkedOut.length - 1].date - this.registered.date) / (1000 * 60 * 60 * 24));
@@ -232,25 +235,28 @@ itemSchema.methods.serializeWithUsefulLife = function () {
     }
 }
 
+
 // Instance method to determine if an item is on shelf
 itemSchema.methods.isOnShelf = function () {
-    let lastCheckedOut, lastCheckedIn;
-    // If checkedOut/checkedIn arrays aren't empty, get
-    // their last element number
-    if( this.checkedOut.length > 0){
-        lastCheckedOut = this.checkedOut.length-1;
-    }
-    if (this.checkedIn.length > 0) {
-        lastCheckedIn = this.checkedIn.length-1;
-    }
     // If item has never been checked out or if its more recent operation
-    // is checked in then it will be considered to be on shelf
-    if (this.checkedOut.length === 0
-        || this.checkedOut[lastCheckedOut].date < this.checkedIn[lastCheckedIn].date) {
-        return "true";
-    } 
-    return "false";
+    // is "checked in" then it will be considered to be on shelf
+    if ((this.checkedOut.length === 0 && this.checkedIn.length === 0 ) 
+        || (this.checkedOut.length > 0 && this.checkedIn.length > 0
+            && this.checkedOut[0].date < this.checkedIn[0].date)) {
+            return "true";
+        } 
+        return "false";
 }
+   
+/////////////////////NOT WORKING
+itemSchema.pre('save', function(next){
+    if( this.isOnShelf() === "true" ){
+        this.isCheckedOut = false;
+    } else {
+        this.isCheckedOut = true;
+    }
+    next();
+});
 
 employeeSchema.pre('find', function (next) {
     this.populate('department');
@@ -263,16 +269,14 @@ employeeSchema.pre('findOne', function (next) {
 });
 
 itemSchema.pre( 'find', function( next ){
-    this.populate( 'product checkedIn.employee checkedOut.employee' );
+    this.populate( 'product checkedIn.employee checkedOut.employee isCheckedOut' );
     next();
 });
 
 itemSchema.pre( 'findOne', function( next ){
-    this.populate( 'product checkedIn.employee checkedOut.employee' );
+    this.populate( 'product checkedIn.employee checkedOut.employee isCheckedOut' );
     next();
 });
-
-
 
 const Item = mongoose.model( "Item", itemSchema );
 const Employee = mongoose.model("Employee", employeeSchema);

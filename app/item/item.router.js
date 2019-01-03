@@ -473,7 +473,9 @@ itemRouter.post('/', jwtPassportMiddleware, User.hasAccess(User.ACCESS_PUBLIC), 
                 return res.status( HTTP_STATUS_CODES.CREATED ).json( createdItem.serialize());
             })
             .catch( err => {
-                return res.status( HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json( err );
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                    message: 'Something went wrong. Please try again'
+                });
             });
         })    
 })
@@ -490,7 +492,9 @@ itemRouter.get( '/', ( req, res ) => {
             return res.status( HTTP_STATUS_CODES.OK ).json( serializedItems );
         })
         .catch( err => {
-            return res.status( HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json( err );
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
         });
 });
 
@@ -512,7 +516,9 @@ itemRouter.get('/advancedSearch', (req, res) => {
                 return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
         });
 })
 
@@ -545,7 +551,9 @@ itemRouter.get('/search/:searchTerm', (req, res) => {
                 return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
         });
     } else {
         // if the search term is a string, look among the item's  
@@ -592,7 +600,8 @@ itemRouter.get('/search/:searchTerm', (req, res) => {
                 return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                    message: 'Something went wrong. Please try again'});
             });
     }
 });
@@ -607,7 +616,9 @@ itemRouter.get('/warehouse', (req, res) => {
             return res.status(HTTP_STATUS_CODES.OK).json(list.sort());
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                    message: 'Something went wrong. Please try again'
+                });
         });
 
 })
@@ -628,7 +639,9 @@ itemRouter.get('/usefulLife',
             return res.status( HTTP_STATUS_CODES.OK ).json( serializedItems )
         })
         .catch( err => {
-            return res.status( HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json({ message: err })
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
         })
 })
 
@@ -653,7 +666,9 @@ itemRouter.get('/onShelf/:booleanValue',
             return res.status( HTTP_STATUS_CODES.OK ).json( serializedItems )
         })
         .catch( err => {
-            return res.status( HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json({ message: err })
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
         })
 })
 
@@ -678,7 +693,9 @@ itemRouter.get('/:itemId',
             return res.status( HTTP_STATUS_CODES.OK ).json( item.serialize() );
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
         })
 });
 
@@ -738,7 +755,9 @@ itemRouter.put('/:itemId',
             return res.status(HTTP_STATUS_CODES.OK).json(updatedItem.serialize());
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).jsonjson({
+                message: 'Something went wrong. Please try again'
+            });
         });
     });
 
@@ -784,25 +803,35 @@ itemRouter.put('/checkIn/:itemId',
             });
         }
 
+      
+        // check if item is checkedOut
         return Item
-            .findOneAndUpdate({
+            .find({
                 _id: req.params.itemId
-            }, {
-                $push: { checkedIn: checkInData }  // Mongoose only supports push. So when looking for the last check in look for date or  last in the array!!!!
-            },
-            {
-                new: true  // This option will return the updated item
+            })
+            .then(item => {
+                if( !item.isCheckedOut ){
+                    return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
+                        message: `Item with id ${req.params.itemId} was already checked-in.`
+                    })
+                }
+                // if item was checked-out then do check-in
+                item.checkedIn.unshift(checkInData);
+                return item.save();
             })
             .then(item => {
                 console.log(`Checking in item with id: ${req.params.itemId}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: err });
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                    message: 'Something went wrong. Please try again'
+                });
             });
     });
 
-// checkOut an item
+// checkOut an item. It will add a check out transaction at the
+// beginning of the item.checkedOut array.
 itemRouter.put('/checkOut/:itemId',
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_PUBLIC ), 
@@ -811,7 +840,7 @@ itemRouter.put('/checkOut/:itemId',
         let checkOutData = {
             employee: req.body.employee,
             date: req.body.date,
-            status: req.body.status
+            condition: req.body.condition
         }
 
         // check that id in request body matches id in request path
@@ -844,21 +873,29 @@ itemRouter.put('/checkOut/:itemId',
             });
         }
 
+        // check if item is on shelf
         return Item
-            .findOneAndUpdate({
+            .find({
                 _id: req.params.itemId
-            }, {
-                $push: { checkedOut: checkOutData
-            }
-            },{
-                new: true // This option will return the updated item
+            })
+            .then( item => {
+                if( item.isCheckedOut ){
+                    return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
+                        message: `Item with id ${req.params.itemId} was already checked out.`
+                    })
+                }
+                // if item is available then do check-out
+                item.checkedOut.unshift( checkOutData );
+                return item.save();
             })
             .then(item => {
                 console.log(`Checking out item with id: ${req.params.itemId}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                    message: 'Something went wrong. Please try again'
+                });
             });
     });
 
@@ -880,7 +917,9 @@ itemRouter.delete('/:itemId',
                 });
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                    message: 'Something went wrong. Please try again'
+                });
             })
     });
 
@@ -892,26 +931,59 @@ itemRouter.delete('/:itemId',
         // jwtPassportMiddleware, 
         // User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
-console.log("LOW");
-            return Item
-                .aggregate([{
-                    $group: { 
-                        _id: "$product",
-                        count: { $sum: 1 },
-                        // $cond: { if: { $gt: ["$product.minimumRequired.quantity", "$count"]},
-                        //     then: { $push: { lowStock: true}},
-                        //     else: {$push: { lowStock: false}}
-                    // }
-                }}])
+            let lowStock ={};
+            return Product
+                .find({ $and: [
+                    { consummable: true }, 
+                    { 'minimumRequired.quantity': { $gt: 0 }}
+                ]})
                 .then(products => {
-                    
-                   console.log("PROD ", products.count);
-                    //return products.filter( product => product.isStockLow( product ))
-                // })
-                // .then(lowStockProducts =>{                    
-                    return res.status(HTTP_STATUS_CODES.OK).json(lowStockProducts);
+                    products.forEach( product =>{
+                        let id = product._id;
+                        lowStock[id] = {
+                            product: product,
+                            minimumRequired: product.minimumRequired.quantity,
+                            inStock: [],
+                            difference: 0
+                        } 
+                    })
+
+                    return products.map(product => product._id)
+                })
+                .then( productIds => {
+                    return Item
+                    .find({ $and: [{
+                        "product": { $in: productIds }
+                    },{
+                        "isCheckedOut": false
+                    }
+                ]})
+                .then(items => {
+                    items.forEach( item => {
+                        let id = item.product;
+                        lowStock[id].inStock.push(item);
+                    })
+                    return lowStock;
+                })
+                .then(lowStock=> {
+                    let toArray =[];
+                    Object.keys(lowStock).forEach(productId => {
+                        lowStock[productId].difference = lowStock[productId].inStock.length - lowStock[productId].minimumRequired;
+                        toArray.push(lowStock[productId]);
+                    })
+                    return toArray;
+                })
+                .then( toArray => {     
+                    console.log(toArray);      
+                    return res.status(HTTP_STATUS_CODES.OK).json(toArray);
                 })
         })
+        .catch(err => {
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+                message: 'Something went wrong. Please try again'
+            });
+        })
+    })
 
 
 module.exports = { itemRouter };
