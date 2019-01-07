@@ -45,8 +45,8 @@ const itemSchema = mongoose.Schema({
     },
     checkedOut: [{
         employee: {
-        type: ObjectId,
-        ref: "Employee"
+            type: ObjectId,
+            ref: "Employee"
         },
         barcode: Number,
         date: Date,
@@ -57,11 +57,11 @@ const itemSchema = mongoose.Schema({
     }],
     checkedIn: [{  
         employee: {
-        type: ObjectId,
-        ref: "Employee"
+            type: ObjectId,
+            ref: "Employee"
         },
         barcode: Number,
-        date: Date
+        date: Date,
     }],
     location: {
         warehouse: String,
@@ -69,13 +69,12 @@ const itemSchema = mongoose.Schema({
         shelf: Number,
         bin: Number
     },
-    isCheckedOut: Boolean,
+   isCheckedOut: Boolean,
 });
 
-// define the fields that will be available for advanced search
-const searchableFields = ["name", "category", "model", "manufacturer", "warehouse", "consummable", "onShelf"];
 
 const ItemJoiSchema = Joi.object().keys({
+    __v: Joi.string(),
     _id: Joi.string(),
     barcode: Joi.number(),
     product: Joi.object().keys({
@@ -248,7 +247,6 @@ itemSchema.methods.isOnShelf = function () {
         return "false";
 }
    
-/////////////////////NOT WORKING
 itemSchema.pre('save', function(next){
     if( this.isOnShelf() === "true" ){
         this.isCheckedOut = false;
@@ -269,12 +267,12 @@ employeeSchema.pre('findOne', function (next) {
 });
 
 itemSchema.pre( 'find', function( next ){
-    this.populate( 'product checkedIn.employee checkedOut.employee isCheckedOut' );
+    this.populate( 'product checkedIn.employee checkedOut.employee' );
     next();
 });
 
 itemSchema.pre( 'findOne', function( next ){
-    this.populate( 'product checkedIn.employee checkedOut.employee isCheckedOut' );
+    this.populate( 'product checkedIn.employee checkedOut.employee' );
     next();
 });
 
@@ -283,5 +281,4 @@ const Employee = mongoose.model("Employee", employeeSchema);
 const Department = mongoose.model("Department", departmentSchema);
 
 module.exports ={
-    Item, Employee, Department, searchableFields, ItemJoiSchema, UpdateItemJoiSchema
-};
+    Item, Employee, Department, ItemJoiSchema, UpdateItemJoiSchema };

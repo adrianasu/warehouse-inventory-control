@@ -8,7 +8,7 @@ const { Product } = require('../app/product/product.model')
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
 
-const { generateTestUser, generateToken, seedUsersDb } = require('./fakeUser');
+const { generateTestUser, generateToken } = require('./fakeUser');
 const { seedItemsDb } = require('./fakeData');
 
 const expect = chai.expect;
@@ -104,6 +104,7 @@ describe( 'Items API resource tests', function(){
             .set('Authorization', `Bearer ${ jwToken }`)
             .send( newItem )
             .then( function( res ){
+           
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
                 checkObjectContent( res, itemKeys, newItem );
             })
@@ -333,26 +334,28 @@ it('Should delete item by id', function () {
         });
     })
 
-    it('Should check-in an item', function(){
-        let newItem = {
-            barcode: 00112233,
-            serialNumber: 998877
-        }
-
+    it.only('Should check-in an item', function(){
+        let checkOutData = {
+            condition: "in-use",
+        };
         let checkInData = {
-            date: new Date('2018'),
-            barcode: 898989
+            barcode: 123456,
         }
 
         return Employee
             .findOne()
             .then(employee => {
-                checkInData.employee = employee.id;
+                checkInData.employeeId = employee.id;
+                checkOutData.employeeId = employee.id; 
                 return Item
-                 .create(newItem)
+                 .findOne()
             })
             .then(item => {
                 checkInData.itemId = item.id;
+                item.checkedOut.unshift(checkOutData);
+                return item.save();
+            })
+            .then( item => {
                 return chai.request(app)
                     .put(`/api/item/checkIn/${item.id}`)
                     .set("Authorization", `Bearer ${jwToken}`)
@@ -360,7 +363,7 @@ it('Should delete item by id', function () {
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object');
-                expect(res.body.checkedIn).to.have.lengthOf(1);
+                expect(res.body.checkedIn).to.have.lengthOf(2);
             })
             .catch(function (err) {
                 console.log(err);
@@ -374,21 +377,20 @@ it('Should delete item by id', function () {
      }
 
      let checkOutData = {
-         date: new Date('2018'),
          barcode: 898989
      }
 
      return Employee
          .findOne()
          .then(employee => {
-             checkOutData.employee = employee.id;
+             checkOutData.employeeId = employee.employeeId;
              return Item
                  .create(newItem)
          })
          .then(item => {
-             checkOutData.itemId = item.id;
+             checkOutData.itemId = item._id;
              return chai.request(app)
-                 .put(`/api/item/checkOut/${item.id}`)
+                 .put(`/api/item/checkOut/${item._id}`)
                  .set("Authorization", `Bearer ${jwToken}`)
                  .send(checkOutData)
          })

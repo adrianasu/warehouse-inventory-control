@@ -1,25 +1,29 @@
 const express = require('express');
 const Joi = require('Joi');
 
+
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Item, ItemJoiSchema, UpdateItemJoiSchema } = require('./item.model');
+const { Item, Employee, ItemJoiSchema, UpdateItemJoiSchema } = require('./item.model');
 const { Product, Category, Manufacturer } = require('../product/product.model');
 
 const itemRouter = express.Router();
 
 const CheckInJoiSchema = Joi.object().keys({
-            employee: Joi.string(), 
-             barcode: Joi.number(),
-            date: Joi.date()
+    barcode: Joi.number(),
+    date: Joi.date(),
+    employeeId: Joi.string(), 
+    itemId: Joi.string(),
+
         });
 
 const CheckOutJoiSchema = Joi.object().keys({
-    employee: Joi.string(),
-    date: Joi.date(),
     barcode: Joi.number(),
-    status: Joi.string()
+    condition: Joi.string(),
+    date: Joi.date(),
+    employeeId: Joi.string(),
+    itemId: Joi.string(),
 })
 
 function getCollectionIdsWithOR(searchQuery, collectionName) {
@@ -35,7 +39,6 @@ function getCollectionIdsWithOR(searchQuery, collectionName) {
 }
 
 function getCollectionIds( queries, collectionName ){
-  
      return collectionName
         .find( queries )
         .then( items => {
@@ -73,28 +76,10 @@ function findWithORoperator( query ) {
         return getAndSendItems(items) })
 }
 
-function transformObjectIntoArray( query ){
-    let queryArray = [];
-    Object.keys( query ).forEach( key => {
-        if (query[key].queries && 
-            query[key].queries.length > 0) {
-            queryArray.push({[key]: query[key]});
-        }
-    })
-    return queryArray;
-}
 
 function groupQueryByCollections( requestedQuery ){
-    let names = ["product", "category", "manufacturer"];
+ 
     let query = { 
-        manufacturer: { 
-                collection: Manufacturer, 
-                queries: [] 
-        },
-        category: {
-            collection: Category,
-            queries: []
-        },
         product: {
             collection: Product,
             queries: []
@@ -103,12 +88,12 @@ function groupQueryByCollections( requestedQuery ){
             collection: Item,
             queries: []
         },
-        onShelf: "NA"
+        onShelf: undefined
     };
 
     Object.keys( requestedQuery ).forEach( field => {
         let fieldValue = requestedQuery[field];
-        if( names.includes(field) ){
+        if( field === "product" ){
             query[field].queries.push({ 
                 "name": new RegExp(fieldValue, 'i')
             });
@@ -118,55 +103,49 @@ function groupQueryByCollections( requestedQuery ){
             });
         } else if( field === "onShelf" ) {
               query.onShelf = requestedQuery.onShelf;
-            }else if( field === "consummable"){
-                query.product.queries.push({ [field]: fieldValue });
+        }else if( field === "model"){
+            query.product.queries.push({
+                [field]: new RegExp(fieldValue, 'i')})
         } else {
             query.product.queries.push({
-                [field]: new RegExp(fieldValue, 'i')
-            });
+                [field]: fieldValue});
         }
-    })
+    });
 
-    // transform object into array and eliminate properties with empty values
-    let queryArray = transformObjectIntoArray( query );
-    if( query.onShelf !== "NA"){
-        queryArray.push({ onShelf: query.onShelf });
-    }
-
-    return queryArray;
+    return query;
 }
 
 
 function getItemsWithoutAsyncBefore( query ){ 
-   
-    // If the only query sent was onShelf, search all items
-    // and filter them afterwards
-    if( query.length === 1 && 
-        query[0].onShelf ){
+    let itemQuery = query.item.queries;
+    // If the only query sent was onShelf, search 
+    // all items and filter them afterwards
+    if(  itemQuery.length === 0 && 
+        query.onShelf !== undefined ){
         return Item
             .find()
             .then(items => {
                 return items.filter(item =>
-                    item.isOnShelf() === query[0].onShelf)  
+                    item.isOnShelf() === query.onShelf)  
             })
             .then(items => {
                 return items.map(item => item.serialize());
             })
-       // Search query includes warehouse     
+       // If search query includes warehouse     
     } else {
-        let searchQuery = query[0].queries[0];
         return Item
-        .find( searchQuery )
+        .find( itemQuery[0] )
         .then(items => { 
                 // Check if onShelf is also included in the query
-                if (items && items.length >= 1 && query[1] && query[1].onShelf) {
+                if (items && items.length >= 1 && query.onShelf !== undefined) {
                     return items.filter(item =>
-                        item.isOnShelf() === query[1].onShelf)
+                        item.isOnShelf() === query.onShelf)
                 } 
+                // If onShelf is not included, return all items found
                 return items;
             })
             .then( items => {
-             if( items.length === 0 ){
+                if( items.length === 0 ){
                     return {message: 'No items found. Please try again with another values.'}
                 }
                 return items.map(item => item.serialize());
@@ -175,271 +154,109 @@ function getItemsWithoutAsyncBefore( query ){
 }
 
 
-function doOneAsyncAndGetItems( queryGroup ){
-    // The only option that requires one async search
-    // before doing the final search is within the Product
-    // collection
-  let collectionName, productQueries, onShelfQuery;
-  let itemQueries = [];
-    queryGroup.forEach( query => {
-        Object.keys( query ).forEach( key => {
-            if(key === "product"){
-                collectionName = query[key].collection;
-                productQueries = query[key].queries[0];
-            } else if( key === "item" ){
-                itemQueries.push(query[key].queries[0]);
-            } else if( key === "onShelf"){
-                onShelfQuery = query[key];
-            }
-        })
-    }) 
-
-    return getCollectionIds( productQueries, collectionName )
-    .then( ids => {
-        let searchQuery = itemQueries[0];
-        // If any product ids were found, add them to the Item query
-        if( ids.length > 0 ){
-            itemQueries.push({ product: ids });
-            searchQuery = { $and: itemQueries };
-        }
-        return Item
-        .find( searchQuery )
-    })
-    .then(items => {
-        if (items.length > 0 && onShelfQuery !== undefined ) {
-            return items.filter(item => item.isOnShelf() === onShelfQuery )
-        }
-        return items;
-    })
-    .then( items => {
-        if( items.length > 0){
-            return items.map(item => item.serialize())
-        }
-        return { message: 'No items found. Please, try again with another values.' }
-    })
-}
-
-function doTwoAsyncAndGetItems(queryGroup){
-// In this case, we have two different options. 
-// In both options we'll execute an async search within
-// the Product collection and the other async search
-// could be either into the Manufacturer or Category collection.
-
-    let otherCollectionName, otherQueries, productCollectionName, productQueries, onShelfQuery, manufacturerCollectionName, manufacturerQueries, categoryCollectionName, categoryQueries;
-    let itemQueries = [];
-    let field1 = "";
-    let field2 = "";
-    let field;
-
-    queryGroup.forEach( query => {
-        Object.keys( query ).forEach( key => {
-            if( key === "item" ){
-                itemQueries.push(query[key].queries[0]);
-            } else if( key === "onShelf"){
-                onShelfQuery = query[key];
-            } else if(key === "product") {
-                productCollectionName = query[key].collection;
-                productQueries = query[key].queries[0];
-            } else if( key === "manufacturer" ){
-                manufacturerCollectionName = query[key].collection;
-                manufacturerQueries = query[key].queries[0];
-                field1 = "manufacturer";
-            } else if (key === "category") {
-                categoryCollectionName = query[key].collection;
-                categoryQueries = query[key].queries[0];
-                field2 = "category"
-            }
-        })
-    }) 
-
- 
-    if( field1 ){
-        field = field1;
-        otherQueries = manufacturerQueries;
-        otherCollectionName = manufacturerCollectionName;
+// In this case,  we'll execute an async search within
+// the Product collection before searching into
+// the Item collection.
+function doOneAsyncAndGetItems( query ){
+    let searchQuery;
+    let productQuery = query.product.queries;
+    let itemQuery = query.item.queries;
+    let onShelfQuery = query.onShelf;
+    // If only one query was sent, use that object to do the search
+    if( productQuery.length === 1 ){
+        searchQuery = productQuery[0]
+    // If more than one queries were sent, use the $and operator
     } else {
-        field = field2;
-        otherQueries = categoryQueries;
-        otherCollectionName = categoryCollectionName;
+        searchQuery = { $and: productQuery };
     }
-
-
-    return getCollectionIds(otherQueries, otherCollectionName)
-        .then(ids => {
-            let searchQuery = [productQueries];
-             console.log("searchquery ", searchQuery);
-            // If any ids were found, add them to the Product query
-            if (ids.length > 0) {
-                searchQuery.push({
-                    [field]: ids
-                });
-                searchQuery = {
-                    $and: searchQuery
-                };
-            }
-            console.log("searchquery ", searchQuery);
     
-    return getCollectionIds( searchQuery, productCollectionName )
-        })
-    .then( ids => {
-        let searchQuery = itemQueries[0];
-        // If any product ids were found, add them to the Item query
-        if( ids.length > 0 ){
-            itemQueries.push({ product: ids });
-            searchQuery = { $and: itemQueries };
+    // Search product
+    return getCollectionIds( searchQuery, Product )
+        .then( id => {
+            searchQuery = {};
+            let numberOfQueries = 0;
+            // If any Product ids were found, and there
+            // are Item original queries, add them 
+            // to the Item search query
+            if ( id.length > 0 && itemQuery.length === 1 ) {
+                let itemQueries = itemQuery;
+                itemQueries.product = id;
+ 
+                searchQuery = { $and: itemQueries };
+                numberOfQueries = 2;
+            // If any Product id was found and there
+            // aren't Item original queries, add
+            // that query
+            } else if( id.length > 0 ) {
+            searchQuery = { product: id };
+            numberOfQueries = 1;
+        // If no Product id was found
+        // and there are Item original queries, add
+        // that query
+        } else if( itemQuery.length === 1 ){
+            searchQuery = itemQuery;
+            numberOfQueries = 1;
         }
+
+        if( numberOfQueries === 0 && 
+            onShelfQuery === undefined){
+            throw new Error('No items found. Please, try again with another values.');
+        }
+
         return Item
-        .find( searchQuery )
-    })
-    .then(items => {
-        if (items.length > 0 && onShelfQuery !== undefined ) {
-            return items.filter(item => item.isOnShelf() === onShelfQuery )
-        }
-        return items;
-    })
-    .then( items => {
-        if( items.length > 0){
+            .find( searchQuery )
+        })
+        .then(items => {
+            // If items were found and "onShelf" was sent in the query,
+            // determine which ones are equal to the sent value.
+            if ( items && items.length > 0 && onShelfQuery !== undefined ) {
+                return items.filter(item => item.isOnShelf() === onShelfQuery )
+            }
+            // If onShelf is not in the query return all items found.
+            return items;
+        })
+        .then( items => {
+             if( items && items.length === 0 ){
+                throw new Error('No items found. Please, try again with another values.');
+            }
             return items.map(item => item.serialize())
-        }
-        return { message: 'No items found. Please, try again with another values.' }
-    })
+        })
+        .catch( err => {
+            err.code = 400;
+            console.error(err);
+            throw err;
+        })
 
 }
 
-function doThreeAsyncAndGetItems(queryGroup){
-// In this case, we'll be doing async searches in all of the
-// collections. First, Manufacturer or Category, then Product and 
-// last Item, adding the ids found into the parent's query.
-
-    let otherCollectionName, otherQueries, productCollectionName, productQueries, onShelfQuery, manufacturerCollectionName, manufacturerQueries, categoryCollectionName, categoryQueries;
-    let itemQueries = [];
-    let field1 = "";
-    let field2 = "";
-    let field;
-
-    queryGroup.forEach( query => {
-        Object.keys( query ).forEach( key => {
-            if( key === "item" ){
-                itemQueries.push(query[key].queries[0]);
-            } else if( key === "onShelf"){
-                onShelfQuery = query[key];
-            } else if(key === "product") {
-                productCollectionName = query[key].collection;
-                productQueries = query[key].queries[0];
-            } else if( key === "manufacturer" ){
-                manufacturerCollectionName = query[key].collection;
-                manufacturerQueries = query[key].queries[0];
-                field1 = "manufacturer";
-            } else if (key === "category") {
-                categoryCollectionName = query[key].collection;
-                categoryQueries = query[key].queries[0];
-                field2 = "category"
-            }
-        })
-    }) 
-
-    let productQuery = [productQueries];
-      return getCollectionIds(manufacturerQueries, manufacturerCollectionName)
-        .then(ids => {
-            // If any ids were found, add them to the Product query
-            if (ids.length > 0) {
-                productQuery.push({
-                    [field1]: ids
-                });
-            }
-
-    return getCollectionIds(categoryQueries, categoryCollectionName)
-        })
-        .then(ids => {
-          
-            // If any ids were found, add them to the Product query
-            if (ids.length > 0) {
-                productQuery.push({
-                    [field2]: ids
-                });
-            }
-                    productQuery = {
-                        $and: productQuery
-                    };
-    
-    return getCollectionIds( productQuery, productCollectionName )
-        })
-    .then( ids => {
-        let searchQuery = itemQueries[0];
-        // If any product ids were found, add them to the Item query
-        if( ids.length > 0 ){
-            itemQueries.push({ product: ids });
-            searchQuery = { $and: itemQueries };
-        }
-        return Item
-        .find( searchQuery )
-    })
-    .then(items => {
-        if (items.length > 0 && onShelfQuery !== undefined ) {
-            return items.filter(item => item.isOnShelf() === onShelfQuery )
-        }
-        return items;
-    })
-    .then( items => {
-        if( items.length > 0){
-            return items.map(item => item.serialize())
-        }
-        return { message: 'No items found. Please, try again with another values.' }
-    })
-
-}
-
-
-function calculateNumberOfAsyncFunc( queryGroup ){
-    let numberOfAsync = 0;
-    let collections = [];
-    queryGroup.forEach( query => {
-        Object.keys(query).forEach( key =>{
-            if( key !== "onShelf"){
-                numberOfAsync += 1;
-                collections.push( key );
-            }
-        })
-    })
-  
-    // Category and Manufacturer is nested in Product
-    // so if we have to query one of them we'll have to 
-    // query in the Product collection too.
-   
-    if( (collections.includes("category") ||
-        collections.includes("manufacturer")) 
-        && !(collections.includes("product")) ){
-            numberOfAsync += 1;
-        }
-    
-    return numberOfAsync;
+function hasProduct( query ){
+    if (query.product.queries && 
+        query.product.queries.length > 0) {
+            return true;
+    }
+    return  false;
 }
 
 function getItems( requestedQuery ){
    
-    // Define what async functions will be executed to
-    // since we have nested fields in
-    // our original query ( Manufacturer, Category and Product)
-    let queryGroup = groupQueryByCollections( requestedQuery ); // returns an array
-    let numberofAsyncFunc = calculateNumberOfAsyncFunc( queryGroup );
-
-    if( numberofAsyncFunc === 1 || (
-        numberofAsyncFunc === 0 && 
-        queryGroup[0].onShelf )){
-        return getItemsWithoutAsyncBefore( queryGroup );
-    } else if( numberofAsyncFunc === 2 ){
-        return doOneAsyncAndGetItems( queryGroup );
-    } else if( numberofAsyncFunc === 3 ){
-        return doTwoAsyncAndGetItems(queryGroup);
-    } else if (numberofAsyncFunc === 4 ) {
-        return doThreeAsyncAndGetItems(queryGroup);
-    }
-
+    let query = groupQueryByCollections( requestedQuery ); // returns an array
+    
+    // If our query includes product name, model, category,
+    // manufacturer or consummable fields, we'll have to find
+    // the product id first
+    if( hasProduct(query) ){
+        return doOneAsyncAndGetItems( query );
+    } else {
+        return getItemsWithoutAsyncBefore( query );
+    } 
 }
 
 
 // create new item
-itemRouter.post('/', jwtPassportMiddleware, User.hasAccess(User.ACCESS_PUBLIC), (req, res) => {
+itemRouter.post('/', 
+// jwtPassportMiddleware, 
+// User.hasAccess(User.ACCESS_PUBLIC), 
+(req, res) => {
     const newItem = {
         barcode: req.body.barcode,
         product: req.body.product,
@@ -462,7 +279,7 @@ itemRouter.post('/', jwtPassportMiddleware, User.hasAccess(User.ACCESS_PUBLIC), 
         .then( item => {
             if( item ){
                 return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    err: 'An item with that barcode already exists.'
+                    message: 'An item with that barcode already exists.'
                 });
             }   
         // attempt to create new item
@@ -481,8 +298,8 @@ itemRouter.post('/', jwtPassportMiddleware, User.hasAccess(User.ACCESS_PUBLIC), 
 })
 
 // get all items
-itemRouter.get( '/', ( req, res ) => {
-    return Item 
+itemRouter.get('/', ( req, res ) => {
+    return Item
         .find()
         .then( items => {
             console.log('Getting all items');
@@ -509,16 +326,17 @@ itemRouter.get('/advancedSearch', (req, res) => {
              message: 'Enter at least one value to search for.'
             })
     }
-    
-  //getItems(req.query)
+
     return getItems( req.query )
-        .then(serializedItems => {
-                return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
+        .then(results => {
+            return res.status(HTTP_STATUS_CODES.OK).json( results );
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                message: 'Something went wrong. Please try again'
-            });
+          
+            if (!err.message) {
+                err.message = 'Something went wrong. Please try again'
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({message: err.message });
         });
 })
 
@@ -768,11 +586,11 @@ itemRouter.put('/checkIn/:itemId',
     (req, res) => {
 
         let checkInData = {
-            employee: req.body.employee,
-            date: req.body.date,
+            employeeId: req.body.employeeId,
+            itemId: req.body.itemId,
+            date: Date.now(),
             barcode: req.body.barcode
         }
-
         // check that id in request body matches id in request path
         if (req.params.itemId !== req.body.itemId) {
             const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
@@ -781,11 +599,11 @@ itemRouter.put('/checkIn/:itemId',
                 message
             });
         }
-
-        // if request body doesn't contain both employee and date
-        // fields, send error message
-        const requiredFields = ["employee", "date"];
-    
+        
+        // if request body doesn't contain employee 
+        // field, send error message
+        const requiredFields = ["employee"];
+        
         requiredFields.forEach(field => {
             if (!field in req.body) {
                 const message = `Missing ${field} in request body`;
@@ -802,20 +620,22 @@ itemRouter.put('/checkIn/:itemId',
                 message: validation.error.details[0].message
             });
         }
-
-      
+        
         // check if item is checkedOut
         return Item
-            .find({
-                _id: req.params.itemId
-            })
+            .findById(req.params.itemId)
             .then(item => {
-                if( !item.isCheckedOut ){
-                    return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                        message: `Item with id ${req.params.itemId} was already checked-in.`
-                    })
+                if( item === null ){
+                    let err = { code: 400 };
+                    err.message = `Item with id ${req.params.itemId} doesn't exist.`;
+                    throw err;
                 }
-                // if item was checked-out then do check-in
+                if( !item.isCheckedOut ){
+                    let err = { code: 400 };
+                    err.message = `Item with id ${req.params.itemId} was already checked out.`;
+                    throw err;
+                }
+                // if item was checked-out before then do check-in
                 item.checkedIn.unshift(checkInData);
                 return item.save();
             })
@@ -823,10 +643,11 @@ itemRouter.put('/checkIn/:itemId',
                 console.log(`Checking in item with id: ${req.params.itemId}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
             })
-            .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                    message: 'Something went wrong. Please try again'
-                });
+            .catch(err => {                
+                if( !err.message ){
+                    err.message = 'Something went wrong. Please try again'
+                }
+                return res.status( err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json( err );
             });
     });
 
@@ -838,11 +659,12 @@ itemRouter.put('/checkOut/:itemId',
     (req, res) => {
 
         let checkOutData = {
-            employee: req.body.employee,
-            date: req.body.date,
+            itemId: req.body.itemId,
+            date: Date.now(),
+            employeeId: req.body.employeeId,
+            barcode: req.body.barcode,
             condition: req.body.condition
         }
-
         // check that id in request body matches id in request path
         if (req.params.itemId !== req.body.itemId) {
             const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
@@ -852,9 +674,9 @@ itemRouter.put('/checkOut/:itemId',
             });
         }
 
-        // if request body doesn't contain both employee and date
-        // fields, send error message
-        const requiredFields = ["employee", "date"];
+        // if request body doesn't contain  employee
+        // field, send error message
+        const requiredFields = ["employee"];
     
         requiredFields.forEach(field => {
             if (!field in req.body) {
@@ -868,21 +690,34 @@ itemRouter.put('/checkOut/:itemId',
 
         const validation = Joi.validate(checkOutData, CheckOutJoiSchema);
         if (validation.error) {
+            console.error(validation.error.details[0].message)
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message: validation.error.details[0].message
             });
         }
-
-        // check if item is on shelf
-        return Item
-            .find({
-                _id: req.params.itemId
+        // check if employeeId exists
+        return Employee
+            .findOne({ employeeId: req.body.employeeId })
+            .then( employee => {
+                if( employee === null ){
+                    let err = { code: 400 };
+                    err.message = `Employee with id ${req.body.employeeId} doesn't exist`;
+                    throw err;
+                }
+                // check if item is on shelf
+                return Item
+                    .findById( req.body.itemId )    
             })
             .then( item => {
+                if( item === null ){
+                    let err = { code: 400 };
+                    err.message = `Item with id ${req.params.itemId} doesn't exist.`;
+                    throw err;
+                }
                 if( item.isCheckedOut ){
-                    return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                        message: `Item with id ${req.params.itemId} was already checked out.`
-                    })
+                    let err = { code: 400 };
+                    err.message = `Item with id ${req.params.itemId} was already checked out.`;
+                    throw err;
                 }
                 // if item is available then do check-out
                 item.checkedOut.unshift( checkOutData );
@@ -893,9 +728,10 @@ itemRouter.put('/checkOut/:itemId',
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                    message: 'Something went wrong. Please try again'
-                });
+                if (!err.message) {
+                    err.message = 'Something went wrong. Please try again'
+                }
+                return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
             });
     });
 

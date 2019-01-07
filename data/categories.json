@@ -1,5 +1,5 @@
-{"_id":{"$oid":"5c21687121cb9156dc1717c3"},"name":"Baby","addedBy":{"$oid":"5c21687121cb9156dc1717ad"},"__v":0}
-{"_id":{"$oid":"5c21687121cb9156dc1717c4"},"name":"Kids","addedBy":{"$oid":"5c21687121cb9156dc1717b2"},"__v":0}
-{"_id":{"$oid":"5c21687121cb9156dc1717c5"},"name":"Tools","addedBy":{"$oid":"5c21687121cb9156dc1717b0"},"__v":0}
-{"_id":{"$oid":"5c21687121cb9156dc1717c6"},"name":"Clothing","addedBy":{"$oid":"5c21687121cb9156dc1717af"},"__v":0}
-{"_id":{"$oid":"5c21687121cb9156dc1717c7"},"name":"Sports","addedBy":{"$oid":"5c21687121cb9156dc1717af"},"__v":0}
+{"_id":{"$oid":"5c338bbf23059a28f47f23ff"},"name":"Toys","addedBy":{"$oid":"5c338bbf23059a28f47f23ee"},"__v":0}
+{"_id":{"$oid":"5c338bbf23059a28f47f2400"},"name":"Sports","addedBy":{"$oid":"5c338bbf23059a28f47f23ee"},"__v":0}
+{"_id":{"$oid":"5c338bbf23059a28f47f2401"},"name":"Kids","addedBy":{"$oid":"5c338bbf23059a28f47f23ef"},"__v":0}
+{"_id":{"$oid":"5c338bbf23059a28f47f2402"},"name":"Baby","addedBy":{"$oid":"5c338bbf23059a28f47f23e9"},"__v":0}
+{"_id":{"$oid":"5c338bbf23059a28f47f2403"},"name":"Movies","addedBy":{"$oid":"5c338bbf23059a28f47f23e7"},"__v":0}

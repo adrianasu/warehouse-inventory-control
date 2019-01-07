@@ -14,7 +14,7 @@ function generateCheck( employeeIds, checkedOut ){
     const status = ["in-use", "lost", "stolen", "broken"];
     let check = {
         employee: getRandomFromArray( employeeIds ),
-        barcode: faker.random.number( 9 ),
+        barcode: faker.random.number( 99999 ),
         date: faker.date.past()
     }
     if( checkedOut ){
@@ -23,17 +23,26 @@ function generateCheck( employeeIds, checkedOut ){
     return check;
 }
 
-function generateLocation(){
+function generateWarehouseArray(){
+    let arr = [];
+    for (let x = 0; x < 3; x++) {
+        arr.push(faker.address.city());
+    }
+    return arr;
+}
+
+function generateLocation( warehouses ){
     let alphab = 'abcdefghijklmnopqrstuvwxyz';
+  
     return {
-        warehouse: faker.address.city(),
+        warehouse: getRandomFromArray( warehouses ),
         aisle: alphab.charAt(Math.floor(Math.random()* alphab.length)).toUpperCase(),
         shelf: faker.random.number(4),
         bin: faker.random.number(10)
     }
 }
 
-function generateOneItem( employeeIds, productIds ) {
+function generateOneItem( employeeIds, productIds, warehouses ) {
     let itemCondition = ['New', 'Used'];
     return {
         product: getRandomFromArray(productIds),
@@ -45,7 +54,7 @@ function generateOneItem( employeeIds, productIds ) {
         },
         checkedOut: generateCheck( employeeIds, "out" ),
         checkedIn: generateCheck( employeeIds ),
-        location: generateLocation()
+        location: generateLocation(warehouses)
     }
 }
 
@@ -128,27 +137,27 @@ function seedItemsDb(){
     let users = generateUsers();
     let departments = generateDepartments();
   
-    console.log('Generating users')
+
     return User
         .insertMany(users)
         .then(_userIds => {
             userIds =_userIds;
-            console.log('Generating departments');
+         
             return Department.insertMany(departments)
         })
         .then(_departmentIds => {
             departmentIds = _departmentIds;
-            console.log('Generating employees');
+          
             return Employee.insertMany(generateEmployees(departmentIds))
         })
         .then(_employeeIds => {
             employeeIds = _employeeIds;
-            console.log('Generating manufacturers');
+          
             return Manufacturer.insertMany(generateManufacturers())
         })
         .then(_manufacturerIds => {
             manufacturerIds = _manufacturerIds;
-            console.log('Generating categories');
+  
             return Category.insertMany(generateCategories(userIds))
         })
         .then(_categoryIds => {
@@ -157,16 +166,17 @@ function seedItemsDb(){
             for (let x = 0; x < 15; x++) {
                 products.push(generateOneProduct(categoryIds, manufacturerIds));
             }
-            console.log('Generating products');
+         
             return Product.insertMany(products);
         })
         .then(_productIds => {
             let items = [];
             productIds = _productIds;
+            let warehouses = generateWarehouseArray();
             for( let x=0; x<40; x++ ){
-                items.push(generateOneItem(employeeIds, productIds));
+                items.push(generateOneItem(employeeIds, productIds, warehouses));
             }
-            console.log('Generating items');
+            console.log('Generating database');
             return Item.insertMany(items);
         })
         .catch( err => {

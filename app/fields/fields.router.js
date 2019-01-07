@@ -3,7 +3,7 @@ const express = require('express');
 const { HTTP_STATUS_CODES } = require('../config');
 // const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 
-const { Employee  } = require('../item/item.model');
+const { Item, Employee  } = require('../item/item.model');
 const { Category, Manufacturer, Product } = require('../product/product.model');
 
 const fieldsRouter = express.Router();
@@ -12,8 +12,9 @@ function findAllNamesAndIds( CollectionName ){
 
     return CollectionName
         .find()
+        .sort({ name: 1 })
         .then( allDocuments => {
-            if( allDocuments && CollectionName === Employee ){
+            if( CollectionName === Employee && allDocuments ){
                 return allDocuments.map(docum => {
                     return {
                         name: `${docum.firstName} ${docum.lastName}`,
@@ -33,7 +34,8 @@ function findAllNamesAndIds( CollectionName ){
         })
 }
 
-// get searchable fields (Categories, Products, Manufacturers, Employees)
+// get searchable fields (Categories, Products, Manufacturers,
+// Employees and Warehouses)
 fieldsRouter.get('/', (req, res) => {
     let fields = {};
    
@@ -52,7 +54,11 @@ fieldsRouter.get('/', (req, res) => {
         })
         .then(employees => {
             fields.employee = employees;
-            console.log("FIELDS", fields);
+            return Item
+                .distinct('location.warehouse')
+        })
+        .then(warehouses => {
+            fields.warehouse = warehouses.sort();
             return res.status(HTTP_STATUS_CODES.OK ).json( fields );
         })
         .catch( err => {

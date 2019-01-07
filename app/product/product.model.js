@@ -10,8 +10,8 @@ const manufacturerSchema = mongoose.Schema({
 
 const categorySchema = mongoose.Schema({
      name: {
-             type: String,
-             required: true
+        type: String,
+        required: true
     },  
     addedBy: {
         type: ObjectId,
