@@ -1,11 +1,5 @@
-{"_id":{"$oid":"5c338bbd23059a28f47f23e5"},"accessLevel":30,"firstName":"Buck","lastName":"Casper","username":"Clyde_Mills79","password":"$2a$10$zrbAXneTdtYmlbM5fmcqnOoAqENEASAduLgCBhSU9cIP/Z03AmOf.","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23e6"},"accessLevel":30,"firstName":"Hiram","lastName":"Langosh","username":"Robyn20","password":"B6cC6mjCBZpxKAs","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23e7"},"accessLevel":30,"firstName":"Ruth","lastName":"Howe","username":"Wilhelmine.Shields","password":"4WXDNu3N7Vnfk4h","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23e8"},"accessLevel":30,"firstName":"Kim","lastName":"Fahey","username":"Burley_Wehner81","password":"s3WRyvv1l4j_pnq","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23e9"},"accessLevel":30,"firstName":"Otilia","lastName":"Kub","username":"Brandt_Thompson","password":"fwTERqrI2oL2JAy","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23ea"},"accessLevel":30,"firstName":"Alan","lastName":"Stamm","username":"Roberta_Jenkins","password":"LhCVT_ODFr5hwF5","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23eb"},"accessLevel":30,"firstName":"Faustino","lastName":"Moore","username":"Josianne.Watsica","password":"2WpVdyD59GYdXYs","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23ec"},"accessLevel":30,"firstName":"Georgianna","lastName":"Zemlak","username":"Barry81","password":"rzpYajhjk7FE2OH","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23ed"},"accessLevel":30,"firstName":"Jamir","lastName":"Mohr","username":"Sheridan89","password":"bGPSermYCXJfcAS","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23ee"},"accessLevel":30,"firstName":"Michele","lastName":"Hintz","username":"Amely.Schumm76","password":"ze7OZ7OTyFwYyMN","__v":0}
-{"_id":{"$oid":"5c338bbf23059a28f47f23ef"},"accessLevel":30,"firstName":"Lavinia","lastName":"Schowalter","username":"Amari.Toy","password":"RoBxnECfMSnBr2x","__v":0}
+{"_id":{"$oid":"5c374cb4af97084a54dd0529"},"accessLevel":30,"employee":{"$oid":"5c374cb4af97084a54dd051a"},"username":"Deshawn46@hotmail.com","password":"Iho48xKtR5jZeEx","__v":0}
+{"_id":{"$oid":"5c374cb4af97084a54dd052a"},"accessLevel":30,"employee":{"$oid":"5c374cb4af97084a54dd051b"},"username":"Lolita14@yahoo.com","password":"rtkjAvA0SWH0Hit","__v":0}
+{"_id":{"$oid":"5c374cb4af97084a54dd052b"},"accessLevel":30,"employee":{"$oid":"5c374cb4af97084a54dd051c"},"username":"Jacklyn63@gmail.com","password":"kn36veD2fxVsUpq","__v":0}
+{"_id":{"$oid":"5c374cb4af97084a54dd052c"},"accessLevel":30,"employee":{"$oid":"5c374cb4af97084a54dd051d"},"username":"Fernando8@yahoo.com","password":"NE7vbCzgf2r4Ayo","__v":0}
+{"_id":{"$oid":"5c374cb4af97084a54dd052d"},"accessLevel":30,"employee":{"$oid":"5c374cb4af97084a54dd051e"},"username":"Bo_Rowe86@gmail.com","password":"q0PSZ9jM3weA_mq","__v":0}

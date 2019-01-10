@@ -54,10 +54,10 @@ const itemSchema = mongoose.Schema({
             type: String,
             default: "in-use" // in-use, lost, stolen, broken
         },
-        // authorizedBy: {
-        //     type: ObjectId,
-        //     ref: "Employee"
-        // }
+        authorizedBy: {
+            type: ObjectId,
+            ref: "Employee"
+        }
     }],
     checkedIn: [{  
         employee: {
@@ -66,10 +66,10 @@ const itemSchema = mongoose.Schema({
         },
         barcode: Number,
         date: Date,
-        // authorizedBy: {
-        //     type: ObjectId,
-        //     ref: "Employee"
-        // }
+        authorizedBy: {
+            type: ObjectId,
+            ref: "Employee"
+        }
     }],
     location: {
         warehouse: String,
