@@ -5,19 +5,20 @@ mongoose.Promise = global.Promise;
 
 const { app, runServer, closeServer } = require('../app/server');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
-const User = require('../app/user/user.model');
-
-const { generateTestUser, generateToken } = require('./fakeUser');
+const { Employee } = require('../app/item/item.model');
+const { User } = require('../app/user/user.model');
+const { getTestUserToken } = require('./fakeUser');
+const { seedItemsDb } = require('./fakeData');
 
 const expect = chai.expect;
 
 // allow us to use chai.request() method
 chai.use(chaiHttp);
 
-let testUser, jwToken;
-const userKeys = ['id', 'firstName', 'lastName', 'accessLevel', 'levels'];
-const newUserKeys = ['firstName', 'lastName', 'username'];
-const publicUserKeys = ['id', 'firstName', 'lastName', 'accessLevel', 'levels'];
+let jwToken;
+const userKeys = ['id', 'username', 'employee', 'accessLevel', 'levels'];
+const newUserKeys = ['username'];
+const publicUserKeys = ['id', 'employee', 'accessLevel', 'levels'];
 
 function checkResponse( res, statusCode, resType ){
     expect(res).to.have.status(statusCode);
@@ -49,11 +50,13 @@ describe( 'Users API resource tests', function(){
         return runServer( TEST_DATABASE_URL )
     });
 
-    beforeEach( function(){
-        testUser = generateTestUser();
-        return generateToken( testUser )
-            .then(function( _jwToken ){
-                jwToken = _jwToken;
+    beforeEach(function () {
+        return seedItemsDb()
+            .then(() =>
+                getTestUserToken()
+            )
+            .then(_jwToken => {
+                jwToken = _jwToken
             })
     });
 
@@ -66,10 +69,25 @@ describe( 'Users API resource tests', function(){
     });
 
     it( 'Should create a new user', function(){
-        let newUser = generateTestUser();
-        return chai.request( app )
-            .post( '/api/user' )
-            .send( newUser )
+        let newUser = {
+            username: "abc@mail.com",
+            password: "test123",
+        };
+        let newEmployee = {
+            firstName: "Name",
+            lastName: "Last",
+            employeeId: 123456789,
+        }
+        return Employee
+            .create(newEmployee)
+            .then( employee => {
+                newUser.employeeId = newEmployee.employeeId;
+            })
+            .then(() => {
+                return chai.request( app )
+                .post( '/api/user' )
+                .send( newUser )
+            })
             .then(function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
                 checkObjectContent( res, newUserKeys, newUser );
@@ -82,53 +100,44 @@ describe( 'Users API resource tests', function(){
             .set( "Authorization", `Bearer ${jwToken}` )
             .then(function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.OK, 'array' );
-                checkArrayContent( res, publicUserKeys );
+                checkArrayContent( res, userKeys );
             });
     });
 
     it( 'Should return a user by id', function(){
-        let foundUser;
-        return chai.request( app )
-            .get( '/api/user' )
-            .set( "Authorization", `Bearer ${jwToken}` )
-            .then( function( res ){
-                foundUser = res.body[0];
+        let user;
+        return User
+            .findOne()
+            .then( _user => {
+                user = _user;
                 return chai.request( app )
-                .get( `/api/user/${foundUser.id}` )
+                .get( `/api/user/${user.id}` )
                 .set( "Authorization", `Bearer ${jwToken}` )
             })
             .then(function( res ) {
                 checkResponse( res, HTTP_STATUS_CODES.OK, 'object' );
                 expect( res.body ).to.include.keys( userKeys );
-                expect( res.body.id ).to.equal( foundUser.id );
+                expect( res.body.id ).to.equal( user.id );
             });
     });
 
-    it( 'Should update a user by id', function(){
-        let foundUser;
+    it.only( 'Should update a user by id', function(){
         let updateUser = {
-            firstName: "NewName",
-            lastName: "OtherName",
-            accessLevel: 10
+            username: "mail@mail.com"            
         }
 
-        return chai.request( app )
-            .get( '/api/user' )
-            .set( "Authorization", `Bearer ${jwToken}` )
-            .then(function( res ){
-                checkResponse( res, HTTP_STATUS_CODES.OK, 'array' );
-                foundUser = res.body[0];
-                updateUser.id = foundUser.id;
-
+        return User
+            .findOne()
+            .then( user => {
+                updateUser.id = user.id;
                 return chai.request( app )
-                    .put( `/api/user/${updateUser.id}` )
+                    .put( `/api/user/${user.id}` )
                     .set( "Authorization", `Bearer ${jwToken}` )
                     .send( updateUser )
             })
             .then(function( res ){
-                //console.log("UPDATE ", res);
                 checkResponse( res, HTTP_STATUS_CODES.OK, 'object' );
-                checkObjectContent( res, Object.keys( updateUser ), updateUser );
+                //checkObjectContent( res, Object.keys( updateUser ), updateUser );
             })
             .catch(function( err ){
                 console.log( err );
@@ -136,26 +145,23 @@ describe( 'Users API resource tests', function(){
     });
 
     it( 'Should delete user by id', function(){
-        let foundUser;
-
-        return chai.request( app )
-            .get( '/api/user' )
-            .set( "Authorization", `Bearer ${jwToken}` )
-            .then(function( res ){
-                checkResponse( res, HTTP_STATUS_CODES.OK, 'array' );
-                foundUser = res.body[0];
-                return chai.request( app )
-                    .delete( `/api/user/${foundUser.id}` )
-                    .set( "Authorization", `Bearer ${jwToken}` )
-            })
-            .then(function( res ){
-                checkResponse( res, HTTP_STATUS_CODES.OK, 'object' );
-                expect( res.body.deleted ).to.equal( foundUser.id );
-            })
-            .catch(function( err ){
-                console.log( err );
-            });
+        let user;
+        return User
+        .findOne()
+        .then( _user => {
+            user =_user;
+            return chai.request( app )
+                .delete( `/api/user/${user.id}` )
+                .set( "Authorization", `Bearer ${jwToken}` )
+        })
+        .then(function( res ){
+            checkResponse( res, HTTP_STATUS_CODES.OK, 'object' );
+            expect( res.body.deleted ).to.equal( user.id );
+        })
+        .catch(function( err ){
+            console.log( err );
         });
+    })
 
 
 });

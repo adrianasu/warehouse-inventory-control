@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 // joi allows to create schemas for JS objects to ensure validation of data
 const Joi = require('joi');
 mongoose.Promise = global.Promise;
+const ObjectId = mongoose.Schema.Types.ObjectId;
 
 const ACCESS_BASIC = 0;
 const ACCESS_OVERVIEW = 10;
@@ -14,15 +15,11 @@ const levels = { ACCESS_BASIC, ACCESS_OVERVIEW, ACCESS_PUBLIC, ACCESS_ADMIN };
 
 // mongoose schema to define the structure of our user documents within a collection
 const userSchema = new mongoose.Schema({
-    firstName: {
-        type: String,
-        required: true
+    employee: {
+        type: ObjectId,
+        ref: "Employee"
     },
-    lastName: {
-        type: String,
-        required: true
-    },
-    username: {
+    username: { // we'll use email as username
         type: String,
         required: true
     },
@@ -41,23 +38,14 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.serialize = function(){
     return {
         id: this._id,
-        firstName: this.firstName,
-        lastName: this.lastName,
+        employee: this.employee,
         username: this.username,
         accessLevel: this.accessLevel,
         levels
     };
 };
 
-userSchema.methods.serializePublic = function () {
-    return {
-        id: this._id,
-        firstName: this.firstName,
-        lastName: this.lastName,
-        accessLevel: this.accessLevel,
-        levels
-    };
-};
+
 
 // method to hash a password before storing it
 userSchema.statics.hashPassword = function( password ){
@@ -84,18 +72,25 @@ userSchema.statics.hasAccess = function( accessLevel ){
     }
 }
 
+userSchema.pre('find', function (next) {
+    this.populate('employee');
+    next();
+});
+
+userSchema.pre('findOne', function (next) {
+    this.populate('employee');
+    next();
+});
+
 // use Joi to determine that some data is valid to create a new user
 const UserJoiSchema = Joi.object().keys({
-    firstName: Joi.string().min(1).trim().required(),
-    lastName: Joi.string().min(1).trim().required(),
-    username: Joi.string().min(4).max(30).trim().required(),
+    employeeId: Joi.number().required(),
+    username: Joi.string().required(),
     password: Joi.string().min(7).max(30).trim().required(),
     accessLevel: Joi.number().optional()
 });
 
 const UpdateUserJoiSchema = Joi.object().keys({
-    firstName: Joi.string().min(1).trim(),
-    lastName: Joi.string().min(1).trim(),
     username: Joi.string().min(4).max(30).trim(),
     accessLevel: Joi.number().optional()
 });

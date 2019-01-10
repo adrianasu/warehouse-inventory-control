@@ -9,11 +9,11 @@ const { User } = require('../user/user.model');
 const { JWT_SECRET } = require('../config');
 
 // local strategy used while trying to access an endpoint using user and password
-const localStrategy = new LocalStrategy(( username, password, passportVerify ) => {
+const localStrategy = new LocalStrategy(( email, password, passportVerify ) => {
     let user;
     //verify that the username exists
     User
-        .findOne({ username: username })
+        .findOne({ username: email })
         .then(_user => {
             user = _user;
             if( !user ){

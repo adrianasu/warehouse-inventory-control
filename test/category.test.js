@@ -7,7 +7,7 @@ const { Category } = require('../app/product/product.model');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
 
-const { generateTestUser, generateToken, seedUsersDb } = require('./fakeUser');
+const { getTestUserToken } = require('./fakeUser');
 const { seedItemsDb } = require('./fakeData');
 
 const expect = chai.expect;
@@ -15,7 +15,7 @@ const expect = chai.expect;
 // allow us to use chai.request() method
 chai.use(chaiHttp);
 
-let testUser, jwToken;
+let jwToken;
 
 const categoryKeys = ["name"];
 
@@ -51,14 +51,14 @@ describe( 'Category API resource tests', function(){
         }        )
     });
 
-    beforeEach( function(){
-        testUser = generateTestUser();
-        return generateToken( testUser )
-            .then(function( _jwToken ){
-                jwToken = _jwToken;
-                return seedItemsDb();
+    beforeEach(function () {
+        return seedItemsDb()
+            .then(() =>
+                    getTestUserToken()
+                )
+            .then(_jwToken => {
+                jwToken = _jwToken
             })
-        
     });
 
     afterEach( function(){

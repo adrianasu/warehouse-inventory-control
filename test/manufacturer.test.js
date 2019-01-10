@@ -7,7 +7,7 @@ const { Manufacturer } = require('../app/product/product.model');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
 
-const { generateTestUser, generateToken, seedUsersDb } = require('./fakeUser');
+const { getTestUserToken } = require('./fakeUser');
 const { seedItemsDb } = require('./fakeData');
 
 const expect = chai.expect;
@@ -51,15 +51,15 @@ describe( 'Manufacturer API resource tests', function(){
         }        )
     });
 
-    beforeEach( function(){
-        testUser = generateTestUser();
-        return generateToken( testUser )
-            .then(function( _jwToken ){
-                jwToken = _jwToken;
-                return seedItemsDb();
+   beforeEach(function () {
+       return seedItemsDb()
+           .then(() =>
+                getTestUserToken()
+            )
+            .then(_jwToken => {
+                jwToken = _jwToken
             })
-        
-    });
+   });
 
     afterEach( function(){
         return tearDownDb();

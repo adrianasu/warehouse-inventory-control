@@ -8,7 +8,7 @@ const { Product } = require('../app/product/product.model')
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
 
-const { generateTestUser, generateToken } = require('./fakeUser');
+const { getTestUserToken } = require('./fakeUser');
 const { seedItemsDb } = require('./fakeData');
 
 const expect = chai.expect;
@@ -16,7 +16,7 @@ const expect = chai.expect;
 // allow us to use chai.request() method
 chai.use(chaiHttp);
 
-let testUser, jwToken;
+let jwToken;
 const itemKeys = ["barcode", "serialNumber"];
 
 function insertItems( searchTerm ){
@@ -72,12 +72,13 @@ describe( 'Items API resource tests', function(){
     });
 
     beforeEach( function(){
-        testUser = generateTestUser();
-        return generateToken( testUser )
-            .then(function( _jwToken ){
-                jwToken = _jwToken;
-                return seedItemsDb();
-            })
+        return seedItemsDb()
+        .then(() =>
+             getTestUserToken()
+        )
+        .then( _jwToken =>{
+            jwToken =_jwToken
+        })
         
     });
 
@@ -129,7 +130,7 @@ describe( 'Items API resource tests', function(){
                 .send(newItem)
                 .then( function( res ){
                     checkResponse( res, HTTP_STATUS_CODES.BAD_REQUEST, 'object' );
-                    expect( res.body ).to.include({err: 'An item with that barcode already exists.'});
+                    expect( res.body ).to.include({message: 'An item with that barcode already exists.'});
                 })
         })
         .catch( function( err ){
@@ -334,30 +335,34 @@ it('Should delete item by id', function () {
         });
     })
 
-    it.only('Should check-in an item', function(){
+    it('Should check-in an item', function(){
         let checkOutData = {
-            condition: "in-use",
+            condition: "lost",
         };
         let checkInData = {
             barcode: 123456,
         }
+        let itemId;
 
         return Employee
             .findOne()
             .then(employee => {
-                checkInData.employeeId = employee.id;
-                checkOutData.employeeId = employee.id; 
+
+                checkInData.employeeId = employee.employeeId;
+                checkOutData.employee = employee.id; 
                 return Item
                  .findOne()
             })
             .then(item => {
-                checkInData.itemId = item.id;
+                itemId = item.id;
+                checkInData.itemId = itemId;
                 item.checkedOut.unshift(checkOutData);
                 return item.save();
+        
             })
             .then( item => {
                 return chai.request(app)
-                    .put(`/api/item/checkIn/${item.id}`)
+                    .put(`/api/item/checkIn/${itemId}`)
                     .set("Authorization", `Bearer ${jwToken}`)
                     .send(checkInData)
             })

@@ -11,14 +11,15 @@ function getRandomFromArray( arr ) {
 }
 
 function generateCheck( employeeIds, checkedOut ){
-    const status = ["in-use", "lost", "stolen", "broken"];
+    const condition = ["in-use", "lost", "stolen", "broken"];
     let check = {
         employee: getRandomFromArray( employeeIds ),
         barcode: faker.random.number( 99999 ),
-        date: faker.date.past()
+        date: faker.date.past(),
+        authorizedBy: getRandomFromArray(employeeIds),
     }
     if( checkedOut ){
-        check.status = getRandomFromArray( status );
+        check.condition = getRandomFromArray( condition );
     }
     return check;
 }
@@ -103,7 +104,7 @@ function generateDepartments(){
 
 function generateEmployees( departmentIds ){
      let employees = [];
-     for (let x = 0; x < 5; x++){
+     for (let x = 0; x < 15; x++){
          employees.push({
             employeeId: faker.random.number(999999),
             firstName: faker.name.firstName(),
@@ -114,37 +115,29 @@ function generateEmployees( departmentIds ){
     return employees;
 }
 
-function generateOneUser(userAccessLevel = ACCESS_ADMIN) {
+function generateOneUser(employeeId, userAccessLevel = ACCESS_ADMIN) {
     return {
-        firstName: faker.name.firstName(),
-        lastName: faker.name.lastName(),
-        username: faker.internet.userName(),
+        employee: employeeId,
+        username: faker.internet.email(),
         password: faker.internet.password(),
         accessLevel: userAccessLevel
     };
 }
 
-function generateUsers(){
+function generateUsers(employeeIds){
     let users = [];
-    for (let x = 0; x < 10; x++) {
-        users.push(generateOneUser());
+    for (let x = 0; x < 5; x++) {
+        users.push(generateOneUser(employeeIds[x]));
     }
     return users;
 }
 
 function seedItemsDb(){
     let manufacturerIds, categoryIds, departmentIds, employeeIds, userIds, productIds;
-    let users = generateUsers();
     let departments = generateDepartments();
   
-
-    return User
-        .insertMany(users)
-        .then(_userIds => {
-            userIds =_userIds;
          
-            return Department.insertMany(departments)
-        })
+    return Department.insertMany(departments)
         .then(_departmentIds => {
             departmentIds = _departmentIds;
           
@@ -152,7 +145,10 @@ function seedItemsDb(){
         })
         .then(_employeeIds => {
             employeeIds = _employeeIds;
-          
+            return User.insertMany(generateUsers(employeeIds))
+        })
+        .then(_userIds => {
+            userIds =_userIds;
             return Manufacturer.insertMany(generateManufacturers())
         })
         .then(_manufacturerIds => {
@@ -180,7 +176,8 @@ function seedItemsDb(){
             return Item.insertMany(items);
         })
         .catch( err => {
-            console.log("Error here: ", err)});
+            console.log("Error here: ", err)
+        });
 }
 
 module.exports = {

@@ -589,7 +589,8 @@ itemRouter.put('/checkIn/:itemId',
             employeeId: req.body.employeeId,
             itemId: req.body.itemId,
             date: Date.now(),
-            barcode: req.body.barcode
+            barcode: req.body.barcode,
+            //authorizedBy: req.user.employee._id,
         }
         // check that id in request body matches id in request path
         if (req.params.itemId !== req.body.itemId) {
@@ -602,7 +603,7 @@ itemRouter.put('/checkIn/:itemId',
         
         // if request body doesn't contain employee 
         // field, send error message
-        const requiredFields = ["employee"];
+        const requiredFields = ["employeeId"];
         
         requiredFields.forEach(field => {
             if (!field in req.body) {
@@ -620,10 +621,22 @@ itemRouter.put('/checkIn/:itemId',
                 message: validation.error.details[0].message
             });
         }
-        
-        // check if item is checkedOut
-        return Item
-            .findById(req.params.itemId)
+        // check if employeeId exists
+        return Employee
+            .findOne({ employeeId: req.body.employeeId })
+            .then(employee => {
+                if (employee === null) {
+                    let err = { code: 400 };
+                    err.message = `Employee with id ${req.body.employeeId} doesn't exist`;
+                    console.error(err.message);
+                    throw err;
+                }
+                // add employee mongo id to check-out data
+                checkInData.employee = employee.id;
+                // check if item was checked out
+                return Item
+                    .findById(req.body.itemId)
+            })
             .then(item => {
                 if( item === null ){
                     let err = { code: 400 };
@@ -632,14 +645,19 @@ itemRouter.put('/checkIn/:itemId',
                 }
                 if( !item.isCheckedOut ){
                     let err = { code: 400 };
-                    err.message = `Item with id ${req.params.itemId} was already checked out.`;
+                    err.message = `Item with id ${req.params.itemId} was already checked in.`;
                     throw err;
                 }
                 // if item was checked-out before then do check-in
                 item.checkedIn.unshift(checkInData);
-                return item.save();
+                return item.save(); // save() returns a promise
             })
             .then(item => {
+                // To send the item populated we get it from the db
+                return Item
+                    .findById(req.body.itemId)
+            })
+            .then( item => {
                 console.log(`Checking in item with id: ${req.params.itemId}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
             })
@@ -655,15 +673,15 @@ itemRouter.put('/checkIn/:itemId',
 // beginning of the item.checkedOut array.
 itemRouter.put('/checkOut/:itemId',
     // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    // User.hasAccess( User.ACCESS_BASIC ), 
     (req, res) => {
-
+        
         let checkOutData = {
             itemId: req.body.itemId,
             date: Date.now(),
-            employeeId: req.body.employeeId,
             barcode: req.body.barcode,
-            condition: req.body.condition
+            condition: req.body.condition,
+            //authorizedBy: req.user.employee._id,
         }
         // check that id in request body matches id in request path
         if (req.params.itemId !== req.body.itemId) {
@@ -674,9 +692,9 @@ itemRouter.put('/checkOut/:itemId',
             });
         }
 
-        // if request body doesn't contain  employee
+        // if request body doesn't contain  employeeId
         // field, send error message
-        const requiredFields = ["employee"];
+        const requiredFields = ["employeeId"];
     
         requiredFields.forEach(field => {
             if (!field in req.body) {
@@ -702,8 +720,11 @@ itemRouter.put('/checkOut/:itemId',
                 if( employee === null ){
                     let err = { code: 400 };
                     err.message = `Employee with id ${req.body.employeeId} doesn't exist`;
+                       console.error(err.message);
                     throw err;
                 }
+                // add employee mongo id to check-out data
+                checkOutData.employee = employee.id;
                 // check if item is on shelf
                 return Item
                     .findById( req.body.itemId )    
@@ -712,20 +733,29 @@ itemRouter.put('/checkOut/:itemId',
                 if( item === null ){
                     let err = { code: 400 };
                     err.message = `Item with id ${req.params.itemId} doesn't exist.`;
+                     console.error(err.message);
                     throw err;
                 }
                 if( item.isCheckedOut ){
                     let err = { code: 400 };
                     err.message = `Item with id ${req.params.itemId} was already checked out.`;
+                     console.error(err.message);
                     throw err;
                 }
+
                 // if item is available then do check-out
-                item.checkedOut.unshift( checkOutData );
+                item.checkedOut.unshift(checkOutData);
                 return item.save();
             })
             .then(item => {
+                // To send the item populated we get it from the db
+               return Item
+                   .findById(req.body.itemId)
+            })
+            .then( item => {
                 console.log(`Checking out item with id: ${req.params.itemId}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
+            
             })
             .catch(err => {
                 if (!err.message) {

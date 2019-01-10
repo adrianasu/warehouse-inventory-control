@@ -52,8 +52,12 @@ const itemSchema = mongoose.Schema({
         date: Date,
         condition: {
             type: String,
-            default: "In-use" // in-use, lost, stolen, broken
-        }  
+            default: "in-use" // in-use, lost, stolen, broken
+        },
+        // authorizedBy: {
+        //     type: ObjectId,
+        //     ref: "Employee"
+        // }
     }],
     checkedIn: [{  
         employee: {
@@ -62,6 +66,10 @@ const itemSchema = mongoose.Schema({
         },
         barcode: Number,
         date: Date,
+        // authorizedBy: {
+        //     type: ObjectId,
+        //     ref: "Employee"
+        // }
     }],
     location: {
         warehouse: String,
@@ -125,7 +133,18 @@ const ItemJoiSchema = Joi.object().keys({
         }),
         date: Joi.date(),
         barcode: Joi.number(),
-        condition: Joi.string()
+        condition: Joi.string(),
+        authorizedBy: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(),
+            department: Joi.object().keys({
+                _id: Joi.string(),
+                departmentName: Joi.string(),
+                __v: Joi.number()
+            }),
+            __v: Joi.number()
+        }),
     })),
     checkedIn: Joi.array().items(
         Joi.object().keys({
@@ -137,7 +156,18 @@ const ItemJoiSchema = Joi.object().keys({
                 _id: Joi.string(),
                 departmentName: Joi.string(),
                 __v: Joi.number()
+        }),
+        authorizedBy: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(),
+            department: Joi.object().keys({
+                _id: Joi.string(),
+                departmentName: Joi.string(),
+                __v: Joi.number()
             }),
+            __v: Joi.number()
+        }),
             __v: Joi.number()
         }),
         date: Joi.date(),
@@ -168,7 +198,18 @@ const UpdateItemJoiSchema = Joi.object().keys({
         }),
         date: Joi.date(),
         barcode: Joi.number(),
-        condition: Joi.string()
+        condition: Joi.string(),
+        authorizedBy: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(),
+            department: Joi.object().keys({
+                _id: Joi.string(),
+                departmentName: Joi.string(),
+                __v: Joi.number()
+            }),
+            __v: Joi.number()
+        })
     })),
     checkedIn: Joi.array().items(
         Joi.object().keys({
@@ -181,6 +222,17 @@ const UpdateItemJoiSchema = Joi.object().keys({
                 departmentName: Joi.string(),
                 __v: Joi.number()
             }),
+        authorizedBy: Joi.object().keys({
+            _id: Joi.string(),
+            firstName: Joi.string(),
+            lastName: Joi.string(),
+            department: Joi.object().keys({
+                _id: Joi.string(),
+                departmentName: Joi.string(),
+                __v: Joi.number()
+            }),
+            __v: Joi.number()
+        }),
             __v: Joi.number()
         }),
         date: Joi.date(),
@@ -256,6 +308,8 @@ itemSchema.pre('save', function(next){
     next();
 });
 
+
+
 employeeSchema.pre('find', function (next) {
     this.populate('department');
     next();
@@ -267,12 +321,12 @@ employeeSchema.pre('findOne', function (next) {
 });
 
 itemSchema.pre( 'find', function( next ){
-    this.populate( 'product checkedIn.employee checkedOut.employee' );
+    this.populate('product checkedIn.employee checkedOut.employee');
     next();
 });
 
 itemSchema.pre( 'findOne', function( next ){
-    this.populate( 'product checkedIn.employee checkedOut.employee' );
+    this.populate('product checkedIn.employee checkedOut.employee');
     next();
 });
 
