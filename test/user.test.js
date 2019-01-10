@@ -121,7 +121,7 @@ describe( 'Users API resource tests', function(){
             });
     });
 
-    it.only( 'Should update a user by id', function(){
+    it( 'Should update a user by id', function(){
         let updateUser = {
             username: "mail@mail.com"            
         }
