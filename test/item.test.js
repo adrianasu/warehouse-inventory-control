@@ -3,7 +3,8 @@ const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const { Item, Employee } = require('../app/item/item.model');
+const { Item } = require('../app/item/item.model');
+const { Employee } = require('../app/employee/employee.model');
 const { Product } = require('../app/product/product.model')
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
@@ -128,10 +129,11 @@ describe( 'Items API resource tests', function(){
                 .post('/api/item')
                 .set('Authorization', `Bearer ${ jwToken }`)
                 .send(newItem)
-                .then( function( res ){
-                    checkResponse( res, HTTP_STATUS_CODES.BAD_REQUEST, 'object' );
-                    expect( res.body ).to.include({message: 'An item with that barcode already exists.'});
-                })
+        })
+        .then( function( res ){
+            checkResponse( res, HTTP_STATUS_CODES.BAD_REQUEST, 'object' );
+            expect( res.body ).to.include({message: 'An item with that barcode already exists.'});
+                
         })
         .catch( function( err ){
              console.log( err )
@@ -190,7 +192,7 @@ describe( 'Items API resource tests', function(){
         })
             .then(id => {
             return chai.request(app)
-                .get(`/api/item/advancedSearch?warehouse=${newItem.location.warehouse}&product=${productName}`)
+                .get(`/api/item/advanced-search?warehouse=${newItem.location.warehouse}&product=${productName}`)
 
             })
             .then(function (res) {
@@ -272,7 +274,7 @@ it('Should delete item by id', function () {
     it('Should return items currently on shelf', function () {
         let onShelf = "true";
             return chai.request(app)
-                .get(`/api/item/onShelf/${onShelf}`)
+                .get(`/api/item/on-shelf/${onShelf}`)
                 .set("Authorization", `Bearer ${jwToken}`)
             
             .then(function (res) {
@@ -292,7 +294,7 @@ it('Should delete item by id', function () {
     it(`Should return items' useful life report`, function () {
     
         return chai.request(app)
-            .get(`/api/item/usefulLife`)
+            .get(`/api/item/useful-life`)
             .set("Authorization", `Bearer ${jwToken}`)
 
             .then(function (res) {
@@ -347,9 +349,8 @@ it('Should delete item by id', function () {
         return Employee
             .findOne()
             .then(employee => {
-
                 checkInData.employeeId = employee.employeeId;
-                checkOutData.employee = employee.id; 
+                checkOutData.employeeId = employee.employeeId; 
                 return Item
                  .findOne()
             })
@@ -362,7 +363,7 @@ it('Should delete item by id', function () {
             })
             .then( item => {
                 return chai.request(app)
-                    .put(`/api/item/checkIn/${itemId}`)
+                    .put(`/api/item/check-in/${itemId}`)
                     .set("Authorization", `Bearer ${jwToken}`)
                     .send(checkInData)
             })
@@ -395,7 +396,7 @@ it('Should delete item by id', function () {
          .then(item => {
              checkOutData.itemId = item._id;
              return chai.request(app)
-                 .put(`/api/item/checkOut/${item._id}`)
+                 .put(`/api/item/check-out/${item._id}`)
                  .set("Authorization", `Bearer ${jwToken}`)
                  .send(checkOutData)
          })

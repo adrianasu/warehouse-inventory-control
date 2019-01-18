@@ -3,7 +3,7 @@ const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const { Manufacturer } = require('../app/manufacturer/manufacturer.model');
+const { Employee } = require('../app/employee/employee.model');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
 
@@ -15,9 +15,9 @@ const expect = chai.expect;
 // allow us to use chai.request() method
 chai.use(chaiHttp);
 
-let testUser, jwToken;
+let jwToken;
 
-const manufacturerKeys = ["name"];
+const employeeKeys = ["employeeId", "firstName", "lastName"];
 
 function checkResponse(res, statusCode, resType) {
     expect(res).to.have.status(statusCode);
@@ -25,16 +25,16 @@ function checkResponse(res, statusCode, resType) {
     expect(res.body).to.be.a(resType);
 }
 
-function checkObjectContent( res, manufacturerKeys, newManufacturer ){
-    expect(res.body).to.include.keys(manufacturerKeys);
-    manufacturerKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newManufacturer[key]);
+function checkObjectContent( res, employeeKeys, newemployee ){
+    expect(res.body).to.include.keys(employeeKeys);
+    employeeKeys.forEach( function( key ) {
+        expect(res.body[key]).to.equal(newemployee[key]);
     });
 }
 
-function checkArrayContent( res, manufacturerKeys ){
+function checkArrayContent( res, employeeKeys ){
     expect(res.body).to.have.lengthOf.at.least(1);
-    expect(res.body[0]).to.include.keys(manufacturerKeys);
+    expect(res.body[0]).to.include.keys(employeeKeys);
 }
 
 function tearDownDb(){
@@ -42,7 +42,7 @@ function tearDownDb(){
     return mongoose.connection.dropDatabase();
 }
  
-describe( 'Manufacturer API resource tests', function(){
+describe( 'Employee API resource tests', function(){
 
     before( function(){
         return runServer( TEST_DATABASE_URL )
@@ -51,15 +51,15 @@ describe( 'Manufacturer API resource tests', function(){
         }        )
     });
 
-   beforeEach(function () {
-       return seedItemsDb()
-           .then(() =>
-                getTestUserToken()
-            )
+    beforeEach(function () {
+        return seedItemsDb()
+            .then(() =>
+                    getTestUserToken()
+                )
             .then(_jwToken => {
                 jwToken = _jwToken
             })
-   });
+    });
 
     afterEach( function(){
         return tearDownDb();
@@ -69,39 +69,41 @@ describe( 'Manufacturer API resource tests', function(){
         return closeServer();
     });
 
-    it( 'Should create a new manufacturer', function(){
-       let newManufacturer = {
-            name: "newManufacturer"
+    it( 'Should create a new employee', function(){
+       let newEmployee = {
+            firstName: "newEmployee",
+            lastName: "lastEmployee",
+            employeeId: 123456,
         };
        
         return chai.request( app )
-            .post('/api/manufacturer')
+            .post('/api/employee')
             .set('Authorization', `Bearer ${ jwToken }`)
-            .send( newManufacturer )
+            .send( newEmployee )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, manufacturerKeys, newManufacturer );
+                checkObjectContent( res, employeeKeys, newEmployee );
             })
             .catch( function( err ){
                 console.log( err );
             });
     });
 
-    it("Should not create a new manufacturer bc already exists", function(){
-        let newManufacturer = {};
+    it("Should not create a new employee bc already exists", function(){
+        let newEmployee = {};
         
-        return Manufacturer 
+        return Employee 
         .findOne()
-        .then( manufacturer => {
-            newManufacturer.name = manufacturer.name;
+        .then( employee => {
+            newEmployee.employeeId = employee.employeeId;
         
             return chai.request( app )
-                .post('/api/manufacturer')
+                .post('/api/employee')
                 .set('Authorization', `Bearer ${ jwToken }`)
-                .send(newManufacturer)
+                .send(newemployee)
                 .then( function( res ){
                     checkResponse( res, HTTP_STATUS_CODES.BAD_REQUEST, 'object' );
-                    expect( res.body ).to.include({message: `A manufacturer ${newManufacturer.name} already exists.`});
+                    expect( res.body ).to.include({message: `An employee with ID ${newEmployee.employeeId} already exists.`});
                 })
         })
         .catch( function( err ){
@@ -109,31 +111,31 @@ describe( 'Manufacturer API resource tests', function(){
         });
     });
 
-    it('Should return all manufacturers', function(){
+    it('Should return all employees', function(){
         return chai.request( app )
-            .get('/api/manufacturer')
+            .get('/api/employee')
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.OK, 'array' );
-                checkArrayContent( res, manufacturerKeys );
+                checkArrayContent( res, employeeKeys );
             })
             .catch( function( err ){
                 console.log( err );
-            })
+            });
     });
 
-    it('Should return a manufacturer by id', function(){
+    it('Should return a employee by id', function(){
         
-        return Manufacturer
+        return Employee
             .findOne()
-            .then(function (foundManufacturer) {
+            .then(function (foundEmployee) {
                 return chai.request(app)
-                    .get(`/api/manufacturer/${foundManufacturer._id}`)
+                    .get(`/api/employee/${foundEmployee.employeeId}`)
                     .set("Authorization", `Bearer ${jwToken}`)
                 })
                 .then(function(res) {
                   
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                expect(res.body).to.include.keys("name");
+                expect(res.body).to.include.keys(employeeKeys);
             })
             .catch(function (err) {
                 console.log(err);
@@ -142,40 +144,39 @@ describe( 'Manufacturer API resource tests', function(){
 
     
 
-    it('Should update manufacturer by manufacturerId', function () {
+    it('Should update employee by employeeId', function () {
 
-        let foundManufacturer, updateManufacturer;
-        updateManufacturer = {
-            name: "Update manufacturer"
+        let updateEmployee = {
+            lastName: "Update employee"
         }
 
-        return Manufacturer
+        return Employee
             .findOne()
-            .then(function(_foundManufacturer) {
-                foundManufacturer = _foundManufacturer;
-                updateManufacturer.id = foundManufacturer.id;
+            .then(function(foundEmployee) {
+                updateEmployee.employeeId = foundEmployee.employeeId;
                 return chai.request(app)
-                    .put(`/api/manufacturer/${updateManufacturer.id}`)
+                    .put(`/api/employee/${updateEmployee.employeeId}`)
                     .set("Authorization", `Bearer ${jwToken}`)
-                    .send(updateManufacturer)
+                    .send(updateEmployee)
             })
             .then(function (res) {
+               
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                checkObjectContent(res, ["name"], updateManufacturer);
+                checkObjectContent(res, ['lastName'], updateEmployee);
             })
             .catch(function (err) {
                 console.log(err);
             });
     });
 
-    it('Should delete manufacturer by manufacturerId', function () {
+    it('Should delete employee by employeeId', function () {
       
-        return Manufacturer
+        return Employee
             .findOne()
-            .then(function (manufacturer) {
+            .then(function (employee) {
 
                 return chai.request(app)
-                .delete(`/api/manufacturer/${manufacturer.id}`)
+                .delete(`/api/employee/${employee.employeeId}`)
                 .set("Authorization", `Bearer ${jwToken}`)
             })
             .then(function (res) {

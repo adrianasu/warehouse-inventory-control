@@ -4,7 +4,7 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 
-const { Employee } = require('../item/item.model');
+const { Employee } = require('../employee/employee.model');
 const User = require('./user.model');
 const Users = User.User;
 
@@ -14,15 +14,15 @@ const userRouter = express.Router();
 userRouter.post('/', (req, res) => {
     const newUser = {
         employeeId: req.body.employeeId,
-        username: req.body.username,
+        email: req.body.email,
         password: req.body.password
     };
     // validate new user data using Joi
     const validation = Joi.validate( newUser, User.UserJoiSchema );
     if( validation.error ){
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-            message: validation.error.details[0].message
-        });
+        let err = { code: HTTP_STATUS_CODES.BAD_REQUEST };
+        err.message = validation.error.details[0].message;
+        throw err;
     }
 
     // verify if employeeId exists
@@ -46,18 +46,18 @@ userRouter.post('/', (req, res) => {
             err.message = `An account with employee ID ${req.body.employeeId} already exists.`;
             throw err;
         }
-        // verify if username exists already in our DB
+        // verify if email exists already in our DB
         return Users
-        .findOne({ username: newUser.username })
+        .findOne({ email: newUser.email })
     })
     
     .then( user => {
         if( user ){
             let err = { code: 400 };
-            err.message = 'A user with that username already exists.';
+            err.message = 'A user with that email already exists.';
             throw err;
         }
-        // username non existent so hash password
+        // email non existent so hash password
         return Users.hashPassword(newUser.password);
     })
     .then(passwordHash => {
@@ -69,12 +69,13 @@ userRouter.post('/', (req, res) => {
     .then(createdUser => {
         // Success! Get populated user to send back to client.
         return Users
-        .findOne({ username: req.body.username })
+        .findOne({ email: req.body.email })
     })
     .then( user => {
         return res.status(HTTP_STATUS_CODES.CREATED).json(user.serialize());
     })
     .catch(err => {
+        console.error(err)
         if (!err.message) {
             err.message = 'Something went wrong. Please try again'
         }
@@ -115,15 +116,14 @@ User.hasAccess(User.ACCESS_OVERVIEW),
 
     // check that id in request body matches id in request path
     if (req.params.userId !== req.body.id) {
-        const message = `Request path id ${req.params.userId} and request body id ${req.body.id} must match`;
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-            message
-        }); 
+        let err = { code: HTTP_STATUS_CODES.BAD_REQUEST };
+        err.message = `Request path id ${req.params.userId} and request body id ${req.body.id} must match`;
+        throw err;
     }
     // we only support a subset of fields being updateable.
     // If the user sent over any of them 
     // we update those values on the database
-    const updateableFields = ["password", "username", "accessLevel"];
+    const updateableFields = ["password", "email", "accessLevel"];
     // check what fields were sent in the request body to update
     const toUpdate = {};
     updateableFields.forEach(field => {
@@ -133,10 +133,9 @@ User.hasAccess(User.ACCESS_OVERVIEW),
     });
     // if request body doesn't contain any updateable field send error message
     if (toUpdate.length === 0) {
-        const message = `Missing \`${updateableFields.join('or ')}\` in request body`;
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-            message
-        });
+        let err = { code: HTTP_STATUS_CODES.BAD_REQUEST };
+        err.message = `Missing \`${updateableFields.join('or ')}\` in request body`;
+        throw err;
     }
   
     return Users
@@ -153,19 +152,19 @@ User.hasAccess(User.ACCESS_OVERVIEW),
           
         }
         // users with accessLevel equal to Overview or Public are 
-        // allowed to update their own username only.
+        // allowed to update their own email only.
         if( req.user.accessLevel <= User.ACCESS_PUBLIC &&
-            req.user.username !== user.username ){
+            req.user.email !== user.email ){
                 let err = { code: HTTP_STATUS_CODES.UNAUTHORIZED };
-                err.message = `Unauthorized. You're only allowed to edit your username.`;
+                err.message = `Unauthorized. You're only allowed to edit your email.`;
                 throw err;
         }
                 
         // do not allow to update "admin", "overview" or "public" demo users
-        let username = user.username;
-        if (username === "admin" || username === "public" || username === "overview") {
+        let email = user.email;
+        if (email === "admin" || email === "public" || email === "overview") {
             let err = { code: HTTP_STATUS_CODES.UNAUTHORIZED };
-            err.message = `Unauthorized to edit ${username} user`;
+            err.message = `Unauthorized to edit ${email} user`;
             throw err;
         }
                 
@@ -188,6 +187,7 @@ User.hasAccess(User.ACCESS_OVERVIEW),
             })
          })
          .catch(err => {
+             console.error(err)
              if( !err.message ){
                  err.message = 'Something went wrong. Please try again';
              }

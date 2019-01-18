@@ -12,16 +12,20 @@ function createJWToken(user) {
         user
     },
     JWT_SECRET, {
-        subject: user.username,
+        subject: user.email,
         expiresIn: JWT_EXPIRY,
         algorithm: 'HS256'
     });
 }
 
-// username and password authentication
-authRouter.post('/login', localPassportMiddleware, (req, res) => {
+// email and password authentication
+authRouter.post('/login', 
+ localPassportMiddleware, 
+(req, res) => {
+
     const user = req.user.serialize();
     const authToken = createJWToken(user);
+    console.log("tokenCreated")
     return res.json({
         authToken,
         user

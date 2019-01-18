@@ -3,7 +3,8 @@ const express = require('express');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 
-const { Employee, Item } = require('../item/item.model');
+const { Item } = require('../item/item.model');
+const { Employee } = require('../employee/employee.model');
 const User = require('../user/user.model');
 const Users = User.User;
 
@@ -22,7 +23,7 @@ myAccountRouter.get('/:employeeId',
         employee = _employee;
         if( !employee ){
             let err = { code: HTTP_STATUS_CODES.BAD_REQUEST };
-            err.message = 'Employee ID required.';
+            err.message = `Employee ID ${ req.params.employeeId } doesn't exist.`;
             throw err;
         }
         // Employee found. Search employee's current checked-out items.

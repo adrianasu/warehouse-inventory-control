@@ -5,7 +5,7 @@ mongoose.Promise = global.Promise;
 
 const { app, runServer, closeServer } = require('../app/server');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
-const { Employee } = require('../app/item/item.model');
+const { Employee } = require('../app/employee/employee.model');
 const { User } = require('../app/user/user.model');
 const { getTestUserToken } = require('./fakeUser');
 const { seedItemsDb } = require('./fakeData');
@@ -16,9 +16,8 @@ const expect = chai.expect;
 chai.use(chaiHttp);
 
 let jwToken;
-const userKeys = ['id', 'username', 'employee', 'accessLevel', 'levels'];
-const newUserKeys = ['username'];
-const publicUserKeys = ['id', 'employee', 'accessLevel', 'levels'];
+const userKeys = ['id', 'email', 'employee', 'accessLevel', 'levels'];
+const newUserKeys = ['email'];
 
 function checkResponse( res, statusCode, resType ){
     expect(res).to.have.status(statusCode);
@@ -70,7 +69,7 @@ describe( 'Users API resource tests', function(){
 
     it( 'Should create a new user', function(){
         let newUser = {
-            username: "abc@mail.com",
+            email: "abc@mail.com",
             password: "test123",
         };
         let newEmployee = {
@@ -86,6 +85,7 @@ describe( 'Users API resource tests', function(){
             .then(() => {
                 return chai.request( app )
                 .post( '/api/user' )
+                .set("Authorization", `Bearer ${jwToken}`)
                 .send( newUser )
             })
             .then(function( res ){
@@ -123,7 +123,7 @@ describe( 'Users API resource tests', function(){
 
     it( 'Should update a user by id', function(){
         let updateUser = {
-            username: "mail@mail.com"            
+            email: "mail@mail.com"            
         }
 
         return User

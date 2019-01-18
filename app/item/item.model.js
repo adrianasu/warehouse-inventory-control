@@ -4,25 +4,6 @@ const Joi = require('joi');
 mongoose.Promise = global.Promise;
 const ObjectId = mongoose.Schema.Types.ObjectId;
 
-const departmentSchema = mongoose.Schema({
-    departmentName: {
-        type: String,
-        required: true,
-        unique: true,
-        default: "NA"
-    }
-})
-
-const employeeSchema = mongoose.Schema({
-    employeeId: String,
-    firstName: String,
-    lastName: String,
-    department: {
-        type: ObjectId,
-        ref: "Department"
-    }
-})
-
 const itemSchema = mongoose.Schema({
     barcode: {
         type: Number,
@@ -182,6 +163,107 @@ const ItemJoiSchema = Joi.object().keys({
     isCheckedOut: Joi.boolean()
 })
 
+const newItemJoiSchema = Joi.object().keys({
+    __v: Joi.string(),
+    _id: Joi.string(),
+    barcode: Joi.number(),
+    product: Joi.object().keys({
+        _id: Joi.string(),
+        name: Joi.string(),
+        manufacturer: Joi.object().keys({
+            _id: Joi.string(),
+            name: Joi.string(),
+            __v: Joi.number()
+        }),
+        model: Joi.string(),
+        consummable: Joi.boolean(),
+        minimumRequired: Joi.object().keys({
+            quantity: Joi.number(),
+            units: Joi.string()
+        }),
+        category: Joi.object().keys({
+            name: Joi.string(),
+            addedBy: Joi.object().keys({
+                _id: Joi.string(),
+                firstName: Joi.string().min(1).trim(),
+                lastName: Joi.string().min(1).trim(),
+                username: Joi.string().min(4).max(30).trim(),
+                password: Joi.string().min(7).max(30).trim(),
+                accessLevel: Joi.number().optional(),
+                __v: Joi.number()
+            }),
+        }),
+        __v: Joi.number()
+    }),
+    serialNumber: Joi.number(),
+    registered: Joi.object().keys({
+        date: Joi.date(),
+        condition: Joi.string()
+    }),
+    checkedOut: Joi.array().items(
+        Joi.object().keys({
+            employee: Joi.object().keys({
+                _id: Joi.string(),
+                firstName: Joi.string(),
+                lastName: Joi.string(),
+                department: Joi.object().keys({
+                    _id: Joi.string(),
+                    departmentName: Joi.string(),
+                    __v: Joi.number()
+                }),
+                __v: Joi.number()
+            }),
+            date: Joi.date(),
+            barcode: Joi.number(),
+            condition: Joi.string(),
+            authorizedBy: Joi.object().keys({
+                _id: Joi.string(),
+                firstName: Joi.string(),
+                lastName: Joi.string(),
+                department: Joi.object().keys({
+                    _id: Joi.string(),
+                    departmentName: Joi.string(),
+                    __v: Joi.number()
+                }),
+                __v: Joi.number()
+            }),
+        })),
+    checkedIn: Joi.array().items(
+        Joi.object().keys({
+            employee: Joi.object().keys({
+                _id: Joi.string(),
+                firstName: Joi.string(),
+                lastName: Joi.string(),
+                department: Joi.object().keys({
+                    _id: Joi.string(),
+                    departmentName: Joi.string(),
+                    __v: Joi.number()
+                }),
+                authorizedBy: Joi.object().keys({
+                    _id: Joi.string(),
+                    firstName: Joi.string(),
+                    lastName: Joi.string(),
+                    department: Joi.object().keys({
+                        _id: Joi.string(),
+                        departmentName: Joi.string(),
+                        __v: Joi.number()
+                    }),
+                    __v: Joi.number()
+                }),
+                __v: Joi.number()
+            }),
+            date: Joi.date(),
+            barcode: Joi.number()
+        })),
+    location: Joi.object().keys({
+        warehouse: Joi.string(),
+        aisle: Joi.string(),
+        shelf: Joi.number(),
+        bin: Joi.number()
+    }),
+    isCheckedOut: Joi.boolean()
+})
+
 const UpdateItemJoiSchema = Joi.object().keys({
     checkedOut: Joi.array().items(
         Joi.object().keys({
@@ -262,6 +344,23 @@ itemSchema.methods.serialize = function(){
     }
 }
 
+itemSchema.methods.serializeAll = function () {
+    return {
+        id: this._id,
+        barcode: this.barcode,
+        product: this.product.name,
+        model: this.product.model,
+        manufacturer: this.product.manufacturer.name,
+        category: this.product.category.name,
+        serialNumber: this.serialNumber,
+        isCheckedOut: this.isCheckedOut,
+        registered: this.registered,
+        checkedOut: this.checkedOut,
+        checkedIn: this.checkedIn,
+        location: this.location,
+    }
+}
+
 // Returns the number of days since its registration until 
 // declared as broken (inside the checkedOut.status field)
 itemSchema.methods.calculateUsefulLife = function(){
@@ -276,7 +375,7 @@ itemSchema.methods.serializeWithUsefulLife = function () {
     return {
         id: this._id,
         barcode: this.barcode,
-        product: this.product,
+        product: this.product.name,
         serialNumber: this.serialNumber,
         registered: this.registered,
         checkedOut: this.checkedOut,
@@ -299,24 +398,13 @@ itemSchema.methods.isOnShelf = function () {
         return "false";
 }
    
-itemSchema.pre('save', function(next){
-    if( this.isOnShelf() === "true" ){
+
+itemSchema.pre('save', function (next) {
+    if (this.isOnShelf() === "true") {
         this.isCheckedOut = false;
     } else {
         this.isCheckedOut = true;
     }
-    next();
-});
-
-
-
-employeeSchema.pre('find', function (next) {
-    this.populate('department');
-    next();
-});
-
-employeeSchema.pre('findOne', function (next) {
-    this.populate('department');
     next();
 });
 
@@ -331,8 +419,6 @@ itemSchema.pre( 'findOne', function( next ){
 });
 
 const Item = mongoose.model( "Item", itemSchema );
-const Employee = mongoose.model("Employee", employeeSchema);
-const Department = mongoose.model("Department", departmentSchema);
 
 module.exports ={
-    Item, Employee, Department, ItemJoiSchema, UpdateItemJoiSchema };
+    Item, ItemJoiSchema, UpdateItemJoiSchema };

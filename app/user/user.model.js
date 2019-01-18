@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
         type: ObjectId,
         ref: "Employee"
     },
-    username: { // we'll use email as username
+    email: { // we'll use email as username
         type: String,
         required: true
     },
@@ -39,7 +39,7 @@ userSchema.methods.serialize = function(){
     return {
         id: this._id,
         employee: this.employee,
-        username: this.username,
+        email: this.email,
         accessLevel: this.accessLevel,
         levels
     };
@@ -61,7 +61,7 @@ userSchema.methods.validatePassword = function( password ){
 userSchema.statics.hasAccess = function( accessLevel ){
     //express expects a function with req, res, next
     return function( req, res, next ){
-        console.log(`Checking if ${req.user.username} is allowed`);
+        console.log(`Checking if ${req.user.email} is allowed`);
         if( req.user && req.user.accessLevel >= accessLevel ){
             next();
         } else{
@@ -85,13 +85,13 @@ userSchema.pre('findOne', function (next) {
 // use Joi to determine that some data is valid to create a new user
 const UserJoiSchema = Joi.object().keys({
     employeeId: Joi.number().required(),
-    username: Joi.string().required(),
+    email: Joi.string().required(),
     password: Joi.string().min(7).max(30).trim().required(),
     accessLevel: Joi.number().optional()
 });
 
 const UpdateUserJoiSchema = Joi.object().keys({
-    username: Joi.string().min(4).max(30).trim(),
+    email: Joi.string().min(4).max(30).trim(),
     accessLevel: Joi.number().optional()
 });
 

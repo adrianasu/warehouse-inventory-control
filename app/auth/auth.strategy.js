@@ -8,18 +8,24 @@ const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const { User } = require('../user/user.model');
 const { JWT_SECRET } = require('../config');
 
-// local strategy used while trying to access an endpoint using user and password
-const localStrategy = new LocalStrategy(( email, password, passportVerify ) => {
+
+// local strategy used while trying to access an endpoint 
+// using email and password
+const localStrategy = new LocalStrategy({
+        usernameField: 'email',  // passport is expecting a username, so we need to 
+        passwordField: 'password'
+    }, ( username, password, passportVerify) => {
+            
     let user;
-    //verify that the username exists
-    User
-        .findOne({ username: email })
+    //verify that the email exists
+        User
+        .findOne({ email: username })
         .then(_user => {
             user = _user;
             if( !user ){
                 return Promise.reject({
-                    reason: 'Login Error',
-                    message: 'Incorrect username or password'
+                    reason: 'Login Error.',
+                    message: 'Incorrect username or password.'
                 });
             }
             // username found. Compare password against the hashed password stored
@@ -29,14 +35,15 @@ const localStrategy = new LocalStrategy(( email, password, passportVerify ) => {
         .then(isValid => {
             if( !isValid ){
                 return Promise.reject({
-                    reason: 'Login Error',
-                    message: 'Incorrect username or password'
+                    reason: 'Login Error.',
+                    message: 'Incorrect username or password.'
                 })
             }
             // succesfull authentication. Supply Passport with the authenticated user
             return passportVerify(null, user);
         })
         .catch(error => {
+            console.error(error)
             // execute the passportVerify callback correctly if an error occurred
             if( error.reason === 'LoginError' ){
                 return passportVerify(null, false, error);

@@ -1,9 +1,12 @@
 const faker = require('faker');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-
-const { Item, Employee, Department } = require('../app/item/item.model');
-const { Product, Category, Manufacturer } = require('../app/product/product.model');
+const { Item } = require('../app/item/item.model');
+const { Employee } = require('../app/employee/employee.model');
+const { Department } = require('../app/department/department.model');
+const { Category } = require('../app/category/category.model');
+const { Manufacturer } = require('../app/manufacturer/manufacturer.model');
+const { Product } = require('../app/product/product.model');
 const { User, ACCESS_ADMIN } = require('../app/user/user.model');
 
 function getRandomFromArray( arr ) {
@@ -96,7 +99,7 @@ function generateDepartments(){
     let departments = [];
     for (let x = 0; x < 5; x++) {
         departments.push({
-            departmentName: faker.name.jobArea()
+            name: faker.name.jobArea()
         });
     }
     return departments;
@@ -118,7 +121,7 @@ function generateEmployees( departmentIds ){
 function generateOneUser(employeeId, userAccessLevel = ACCESS_ADMIN) {
     return {
         employee: employeeId,
-        username: faker.internet.email(),
+        email: faker.internet.email(),
         password: faker.internet.password(),
         accessLevel: userAccessLevel
     };
@@ -130,6 +133,13 @@ function generateUsers(employeeIds){
         users.push(generateOneUser(employeeIds[x]));
     }
     return users;
+}
+
+function createItems(items){
+    return items.forEach( item => {
+        return Item.create(item)
+        .catch( err => console.log(err))
+    })
 }
 
 function seedItemsDb(){
@@ -173,10 +183,11 @@ function seedItemsDb(){
                 items.push(generateOneItem(employeeIds, productIds, warehouses));
             }
             console.log('Generating database');
-            return Item.insertMany(items);
+            return createItems(items);
         })
+       
         .catch( err => {
-            console.log("Error here: ", err)
+            console.log("Error: ", err)
         });
 }
 

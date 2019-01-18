@@ -3,7 +3,7 @@ const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const { Product, Category, Manufacturer } = require('../app/product/product.model');
+const { Product } = require('../app/product/product.model');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
 

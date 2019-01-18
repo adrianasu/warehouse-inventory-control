@@ -10,6 +10,8 @@ mongoose.Promise = global.Promise;
 
 const { authRouter } = require('./auth/auth.router');
 const { categoryRouter } = require('./category/category.router');
+const { departmentRouter } = require('./department/department.router');
+const { employeeRouter } = require('./employee/employee.router');
 const { fieldsRouter } = require('./fields/fields.router');
 const { itemRouter } = require('./item/item.router');
 const { localStrategy, jwtStrategy } = require('./auth/auth.strategy');
@@ -18,9 +20,6 @@ const { myAccountRouter } = require('./my-account/my-account.router');
 const { productRouter } = require('./product/product.router');
 const { userRouter } = require('./user/user.router');
 
-passport.use(localStrategy); // configure Passport to use our localStrategy when receiving username/password
-passport.use(jwtStrategy); // configure Passport to use our jwtStrategy when receiving JWTokens
-
 app.use(cors({ origin: CLIENT_ORIGIN }));
 
 // middleware
@@ -28,9 +27,14 @@ app.use(morgan('common')); // allows morgan to intercept and log all HTTP reques
 app.use(express.json()); // required to parse and save JSON data payload into request body
 app.use(express.static('public')); // serve static files inside 'public' folder
 
+passport.use(localStrategy); // configure Passport to use our localStrategy when receiving username/password
+passport.use(jwtStrategy); // configure Passport to use our jwtStrategy when receiving JWTokens
+
 // routers setup to redirect calls to the right router
 app.use('/api/auth', authRouter);
 app.use('/api/category', categoryRouter);
+app.use('/api/department', departmentRouter);
+app.use('/api/employee', employeeRouter);
 app.use('/api/item', itemRouter);
 app.use('/api/manufacturer', manufacturerRouter);
 app.use('/api/my-account', myAccountRouter);

@@ -3,7 +3,7 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Category } = require('../product/product.model');
+const { Category } = require('../category/category.model');
  
 const categoryRouter = express.Router();
 
@@ -38,16 +38,19 @@ categoryRouter.get('/:categoryId',
             })
             .then(category => {
               
-            console.log(`Getting category with id: ${req.params.categoryId}`);
-            if( !category ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: 'No category found with that id.'
-                });
-            }
-            return res.status( HTTP_STATUS_CODES.OK ).json( category );
+                if( !category ){
+                     let err = { code: 400 };
+                    err.message = 'No department found with that id.';
+                    throw err;
+                }
+                console.log(`Getting category with id: ${req.params.categoryId}`);
+                return res.status( HTTP_STATUS_CODES.OK ).json( category );
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
+             if (!err.message) {
+                 err.message = 'Something went wrong. Please try again';
+             }
+             return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
         })
 });
 
@@ -78,20 +81,25 @@ categoryRouter.post('/',
         })
         .then( category => {
             if( category ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: `A category ${req.body.name} already exists.`
-                });
+                let err = { code: 400 };
+                err.message = `A category ${req.body.name} already exists.`;
+                throw err;
             }
+        })
+        .then(() => {
             // attempt to create a new category
             return Category
                 .create( newCategory )
-                .then( createdCategory => {
-                    console.log(`Creating new category`);
-                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdCategory);
-                })
-                .catch(err => {
-                    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
-                });
+        })
+        .then( createdCategory => {
+            console.log(`Creating new category`);
+            return res.status(HTTP_STATUS_CODES.CREATED).json(createdCategory);
+        })
+        .catch(err => {
+             if (!err.message) {
+                 err.message = 'Something went wrong. Please try again';
+             }
+             return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
         })
 })
 

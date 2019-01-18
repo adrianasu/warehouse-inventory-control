@@ -4,6 +4,7 @@ const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
 const { Product, ProductJoiSchema } = require('../product/product.model');
+const { Item } = require('../item/item.model');
 
 const productRouter = express.Router();
 
@@ -66,6 +67,76 @@ productRouter.post('/',
                     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
                 });
         })
+})
+
+// get products with low stock (its minimumRequired is > 0
+// and its current quantity is less than that)
+productRouter.get('/low-stock',
+    // jwtPassportMiddleware, 
+    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    (req, res) => {
+        let lowStock ={};
+        // find all consummable products required
+        // to have more than zero in stock
+        return Product
+            .find({ $and: [
+                { consummable: true }, 
+                { 'minimumRequired.quantity': { $gt: 0 }}
+            ]})
+            .then(products => {
+                // add products found in lowStock object. Define
+                // inStock and difference properties to fill later.
+                products.forEach( product =>{
+                    let id = product._id;
+                    lowStock[id] = {
+                        product: product,
+                        minimumRequired: product.minimumRequired.quantity,
+                        inStock: [],
+                        difference: 0
+                    } 
+                })
+
+                return products.map(product => product._id)
+            })
+            .then( productIds => {
+                // Search items with product ids found above
+                // that are still on shelf.
+                return Item
+                .find({ $and: [{
+                    "product": { $in: productIds }
+                },{
+                    "isCheckedOut": false
+                }
+            ]})
+            .then(items => {
+                // fill inStock array that belongs to a product
+                // with the items found on shelf.
+                items.forEach( item => {
+                    let id = item.product._id;
+                    lowStock[id].inStock.push(item);
+
+                })
+                return lowStock;
+            })
+            .then(lowStock=> {
+                // put all our products
+                let toArray =[];
+                Object.keys(lowStock).forEach(productId => {
+                    lowStock[productId].difference = lowStock[productId].inStock.length - lowStock[productId].minimumRequired;
+                    
+                    toArray.push(lowStock[productId]);
+                })
+                return toArray;
+            })
+            .then( toArray => {     
+                return res.status(HTTP_STATUS_CODES.OK).json(toArray);
+            })
+    })
+    .catch(err => {
+        return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+            message: 'Something went wrong. Please try again'
+        });
+    })
 })
 
 // get product by Id
@@ -174,6 +245,8 @@ productRouter.delete('/:productId',
             });
 
     });
+
+
 
 module.exports = { productRouter };
 

@@ -4,21 +4,6 @@ const Joi = require('joi');
 mongoose.Promise = global.Promise;
 const ObjectId = mongoose.Schema.Types.ObjectId;
 
-const manufacturerSchema = mongoose.Schema({
-    name: String,
-});
-
-const categorySchema = mongoose.Schema({
-     name: {
-        type: String,
-        required: true
-    },  
-    addedBy: {
-        type: ObjectId,
-        ref: "User"
-    }
-})
-
 const productSchema = mongoose.Schema({
     name: {
         type: String,
@@ -80,11 +65,11 @@ productSchema.methods.serialize = function() {
     return {
         id: this._id,
         name: this.name,
-        manufacturer: this.manufacturer,
+        manufacturer: this.manufacturer.name,
+        category: this.category.name,
         model: this.model,
         consummable: this.consummable,
         minimumRequired: this.minimumRequired,
-        category: this.category
     }
 }
 
@@ -97,16 +82,6 @@ productSchema.methods.isStockLow = function (product) {
 }
 
 
-categorySchema.pre('find', function (next) {
-    this.populate('user');
-    next();
-});
-
-categorySchema.pre('findOne', function (next) {
-    this.populate('user');
-    next();
-});
-
 productSchema.pre('find', function (next) {
     this.populate('manufacturer category');
     next();
@@ -117,9 +92,6 @@ productSchema.pre('findOne', function (next) {
     next();
 });
 
-
-const Manufacturer = mongoose.model( "Manufacturer", manufacturerSchema );
 const Product = mongoose.model( "Product", productSchema );
-const Category = mongoose.model( "Category", categorySchema );
 
-module.exports = { Product, Category, Manufacturer, ProductJoiSchema };
+module.exports = { Product, ProductJoiSchema };

@@ -3,7 +3,7 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Manufacturer } = require('../product/product.model');
+const { Manufacturer } = require('../manufacturer/manufacturer.model');
 
 const manufacturerRouter = express.Router();
 

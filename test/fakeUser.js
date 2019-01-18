@@ -1,4 +1,3 @@
-const faker = require( 'faker' );
 const jsonwebtoken = require( 'jsonwebtoken' );
 const mongoose = require( 'mongoose' );
 mongoose.Promise = global.Promise;
@@ -21,7 +20,7 @@ function signJwToken( user ){
         user: {
             id: user.id,
             employee: user.employee,
-            username: user.username,
+            email: user.email,
             accessLevel: user.accessLevel
         }
     },
@@ -29,7 +28,7 @@ function signJwToken( user ){
     {
         algorithm: 'HS256',
         expiresIn: JWT_EXPIRY,
-        subject: user.username
+        subject: user.email
     }
     );
 }

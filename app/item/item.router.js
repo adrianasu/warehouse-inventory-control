@@ -5,15 +5,18 @@ const Joi = require('Joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Item, Employee, ItemJoiSchema, UpdateItemJoiSchema } = require('./item.model');
-const { Product, Category, Manufacturer } = require('../product/product.model');
+const { Item, ItemJoiSchema, UpdateItemJoiSchema } = require('./item.model');
+const { Employee } = require('../employee/employee.model');
+const { Product } = require('../product/product.model');
+const { Category } = require('../category/category.model');
+const { Manufacturer } = require('../manufacturer/manufacturer.model');
 
 const itemRouter = express.Router();
 
 const CheckInJoiSchema = Joi.object().keys({
     barcode: Joi.number(),
     date: Joi.date(),
-    employeeId: Joi.string(), 
+    employeeId: Joi.number(), 
     itemId: Joi.string(),
 
         });
@@ -22,7 +25,7 @@ const CheckOutJoiSchema = Joi.object().keys({
     barcode: Joi.number(),
     condition: Joi.string(),
     date: Joi.date(),
-    employeeId: Joi.string(),
+    employeeId: Joi.number(),
     itemId: Joi.string(),
 })
 
@@ -55,7 +58,9 @@ function getAndSendItems( items ){
     console.log('Getting items');
 
     if( items.length === 0 ) {
-        return { message: 'No items found. Please, try with another values.' };
+        let err ={ code: 400 };
+        err.message = 'No items found. Please, try with another values.';
+        throw err;
     }
     else if ( items.length === 1 ) {
         return items[0].serialize();
@@ -146,7 +151,9 @@ function getItemsWithoutAsyncBefore( query ){
             })
             .then( items => {
                 if( items.length === 0 ){
-                    return {message: 'No items found. Please try again with another values.'}
+                    let err ={ code: 400 };
+                err.message = 'No items found. Please, try with another values.';
+                throw err;
                 }
                 return items.map(item => item.serialize());
             })
@@ -200,7 +207,9 @@ function doOneAsyncAndGetItems( query ){
 
         if( numberOfQueries === 0 && 
             onShelfQuery === undefined){
-            throw new Error('No items found. Please, try again with another values.');
+            let err ={ code: 400 };
+            err.message = 'No items found. Please, try with another values.';
+            throw err;
         }
 
         return Item
@@ -217,16 +226,15 @@ function doOneAsyncAndGetItems( query ){
         })
         .then( items => {
              if( items && items.length === 0 ){
-                throw new Error('No items found. Please, try again with another values.');
+               let err ={ code: 400 };
+                err.message = 'No items found. Please, try with another values.';
+                throw err;
             }
             return items.map(item => item.serialize())
         })
         .catch( err => {
-            err.code = 400;
-            console.error(err);
             throw err;
         })
-
 }
 
 function hasProduct( query ){
@@ -262,7 +270,6 @@ itemRouter.post('/',
         product: req.body.product,
         serialNumber: req.body.serialNumber,
         registered: req.body.registered,
-        checkedIn: req.body.checkedIn,
         location: req.body.location
     }
   
@@ -278,23 +285,28 @@ itemRouter.post('/',
         .findOne({ barcode: newItem.barcode })
         .then( item => {
             if( item ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: 'An item with that barcode already exists.'
-                });
-            }   
+                let err ={ code: 400 };
+                err.message = 'An item with that barcode already exists.';
+                throw err;
+            } 
+        })
+        .then(() => {  
+ 
         // attempt to create new item
         return Item
             .create( newItem )
-            .then( createdItem => {
+        })
+        .then( createdItem => {
                 //success
                 return res.status( HTTP_STATUS_CODES.CREATED ).json( createdItem.serialize());
-            })
-            .catch( err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                    message: 'Something went wrong. Please try again'
-                });
-            });
-        })    
+        })
+        .catch( err => {
+            if( !err.message ){
+                err.message = 'Something went wrong. Please try again';
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        })
+       
 })
 
 // get all items
@@ -303,7 +315,7 @@ itemRouter.get('/', ( req, res ) => {
         .find()
         .then( items => {
             console.log('Getting all items');
-            return items.map( item => item.serialize() );
+            return items.map( item => item.serializeAll() );
         })
         .then( serializedItems => {
             return res.status( HTTP_STATUS_CODES.OK ).json( serializedItems );
@@ -318,7 +330,7 @@ itemRouter.get('/', ( req, res ) => {
 // get items using different queries as filters including: 
 // category name, product name,
 // manufacturer, warehouse, model, consummable and/or on-shelf.
-itemRouter.get('/advancedSearch', (req, res) => {
+itemRouter.get('/advanced-search', (req, res) => {
    
     // if user didn't provide a query, send a message
     if( !req.query ){
@@ -418,8 +430,10 @@ itemRouter.get('/search/:searchTerm', (req, res) => {
                 return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                    message: 'Something went wrong. Please try again'});
+                if( !err.message ){
+                    err.message = 'Something went wrong. Please try again';
+                }
+                return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
             });
     }
 });
@@ -442,7 +456,7 @@ itemRouter.get('/warehouse', (req, res) => {
 })
 
 // get item's usefulLife report
-itemRouter.get('/usefulLife', 
+itemRouter.get('/useful-life', 
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_PUBLIC ), 
     ( req, res ) => {
@@ -464,7 +478,7 @@ itemRouter.get('/usefulLife',
 })
 
 // get items that are or are not on shelf (onShelf: true or false)
-itemRouter.get('/onShelf/:booleanValue', 
+itemRouter.get('/on-shelf/:booleanValue', 
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_PUBLIC ), 
     ( req, res ) => {
@@ -504,16 +518,17 @@ itemRouter.get('/:itemId',
       
             console.log(`Getting item with id: ${req.params.itemId}`);
             if( !item ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: 'No item found with that id.'
-                });
+                let err = { code: 400 };
+                err.message = 'No item found with that id.';
+                throw err;
             }
             return res.status( HTTP_STATUS_CODES.OK ).json( item.serialize() );
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                message: 'Something went wrong. Please try again'
-            });
+            if( !err.message ){
+                message = 'Something went wrong. Please try again';
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
         })
 });
 
@@ -580,7 +595,7 @@ itemRouter.put('/:itemId',
     });
 
 // checkIn an item
-itemRouter.put('/checkIn/:itemId',
+itemRouter.put('/check-in/:itemId',
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_PUBLIC ), 
     (req, res) => {
@@ -590,7 +605,10 @@ itemRouter.put('/checkIn/:itemId',
             itemId: req.body.itemId,
             date: Date.now(),
             barcode: req.body.barcode,
-            //authorizedBy: req.user.employee._id,
+            //authorizedBy: {
+            //     employee: req.user.employee._id 
+            // }
+            
         }
         // check that id in request body matches id in request path
         if (req.params.itemId !== req.body.itemId) {
@@ -671,13 +689,14 @@ itemRouter.put('/checkIn/:itemId',
 
 // checkOut an item. It will add a check out transaction at the
 // beginning of the item.checkedOut array.
-itemRouter.put('/checkOut/:itemId',
+itemRouter.put('/check-out/:itemId',
     // jwtPassportMiddleware, 
     // User.hasAccess( User.ACCESS_BASIC ), 
     (req, res) => {
         
         let checkOutData = {
             itemId: req.body.itemId,
+            employeeId: req.body.employeeId,
             date: Date.now(),
             barcode: req.body.barcode,
             condition: req.body.condition,
@@ -788,68 +807,6 @@ itemRouter.delete('/:itemId',
                 });
             })
     });
-
-
-
-    // get products with low stock (its minimumRequired is > 0
-    // and its current quantity is less than that)
-    itemRouter.get('/product/lowStock',
-        // jwtPassportMiddleware, 
-        // User.hasAccess( User.ACCESS_PUBLIC ), 
-        (req, res) => {
-            let lowStock ={};
-            return Product
-                .find({ $and: [
-                    { consummable: true }, 
-                    { 'minimumRequired.quantity': { $gt: 0 }}
-                ]})
-                .then(products => {
-                    products.forEach( product =>{
-                        let id = product._id;
-                        lowStock[id] = {
-                            product: product,
-                            minimumRequired: product.minimumRequired.quantity,
-                            inStock: [],
-                            difference: 0
-                        } 
-                    })
-
-                    return products.map(product => product._id)
-                })
-                .then( productIds => {
-                    return Item
-                    .find({ $and: [{
-                        "product": { $in: productIds }
-                    },{
-                        "isCheckedOut": false
-                    }
-                ]})
-                .then(items => {
-                    items.forEach( item => {
-                        let id = item.product;
-                        lowStock[id].inStock.push(item);
-                    })
-                    return lowStock;
-                })
-                .then(lowStock=> {
-                    let toArray =[];
-                    Object.keys(lowStock).forEach(productId => {
-                        lowStock[productId].difference = lowStock[productId].inStock.length - lowStock[productId].minimumRequired;
-                        toArray.push(lowStock[productId]);
-                    })
-                    return toArray;
-                })
-                .then( toArray => {     
-                    console.log(toArray);      
-                    return res.status(HTTP_STATUS_CODES.OK).json(toArray);
-                })
-        })
-        .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                message: 'Something went wrong. Please try again'
-            });
-        })
-    })
 
 
 module.exports = { itemRouter };

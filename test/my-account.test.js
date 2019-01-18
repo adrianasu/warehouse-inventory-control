@@ -5,8 +5,9 @@ mongoose.Promise = global.Promise;
 
 const { app, runServer, closeServer } = require('../app/server');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
-const { Employee, Item } = require('../app/item/item.model');
+const { Item } = require('../app/item/item.model');
 const { User } = require('../app/user/user.model');
+const { Employee } = require('../app/employee/employee.model');
 const { getTestUserToken } = require('./fakeUser');
 const { seedItemsDb } = require('./fakeData');
 

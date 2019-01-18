@@ -3,8 +3,12 @@ const express = require('express');
 const { HTTP_STATUS_CODES } = require('../config');
 // const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 
-const { Item, Employee  } = require('../item/item.model');
-const { Category, Manufacturer, Product } = require('../product/product.model');
+const { Item } = require('../item/item.model');
+const { Employee } = require('../employee/employee.model');
+const { Product } = require('../product/product.model');
+const { Category } = require('../category/category.model');
+const { Manufacturer } = require('../manufacturer/manufacturer.model');
+
 
 const fieldsRouter = express.Router();
 
