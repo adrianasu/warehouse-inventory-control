@@ -3,7 +3,9 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
+const { Item } = require('../item/item.model');
 const { Manufacturer } = require('../manufacturer/manufacturer.model');
+const { Product } = require('../product/product.model');
 
 const manufacturerRouter = express.Router();
 
@@ -19,6 +21,9 @@ manufacturerRouter.get('/', (req, res) => {
     return Manufacturer
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
         .then(manufacturers => {
+            return manufacturers.map( manuf => manuf.serialize())
+        })
+        .then( manufacturers => {
             console.log('Getting all manufacturers');
             return res.status(HTTP_STATUS_CODES.OK).json(manufacturers);
         })
@@ -44,7 +49,7 @@ manufacturerRouter.get('/:manufacturerId',
                     message: 'No manufacturer found with that id.'
                 });
             }
-            return res.status( HTTP_STATUS_CODES.OK ).json( manufacturer );
+            return res.status( HTTP_STATUS_CODES.OK ).json( manufacturer.serialize() );
         })
         .catch(err => {
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
@@ -86,7 +91,7 @@ manufacturerRouter.post('/',
                 .create( newManufacturer )
                 .then( createdManufacturer => {
                     console.log(`Creating new manufacturer`);
-                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdManufacturer);
+                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdManufacturer.serialize());
                 })
                 .catch(err => {
                     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -140,7 +145,7 @@ manufacturerRouter.put('/:manufacturerId',
             })
             .then(updatedManufacturer => {
                 console.log(`Updating manufacturer with id: \`${req.params.manufacturerId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedManufacturer);
+                return res.status(HTTP_STATUS_CODES.OK).json(updatedManufacturer.serialize());
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -153,20 +158,42 @@ manufacturerRouter.delete('/:manufacturerId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        return Manufacturer
-            .findOneAndDelete({
-                _id: req.params.manufacturerId
+
+    console.log(`Deleting manufacturer with id: \`${req.params.manufacturerId}\`. Products and items containing this manufacturer will be deleted as well.`);
+    return Product
+        .find({
+            manufacturer: req.params.manufacturerId
+        })
+    .then( products => {
+        return products.map( product => product.id );
+    })
+    .then( productIds => {
+        return Item
+            .deleteMany({
+                product: { $in: productIds }  // $in selects all the documents  where the val of product equals any value in the Ids array.
             })
-            .then(deletedManufacturer => {
-                console.log(`Deleting manufacturer with id: \`${req.params.manufacturerId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json({
-                    deleted: `${req.params.manufacturerId}`,
-                    OK: "true"
-                });
-            })
-            .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).res(err);
+        })
+        .then(items => {
+            return Product
+                .deleteMany({
+                    manufacturer: req.params.manufacturerId
+                })
+        })
+        .then(prod => {
+            return Manufacturer
+                .findOneAndDelete({
+                    _id: req.params.manufacturerId
+                })
+        })
+        .then(deletedManufacturer => {
+            return res.status(HTTP_STATUS_CODES.OK).json({
+                deleted: `${req.params.manufacturerId}`,
+                OK: "true"
             });
+        })
+        .catch(err => {
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
 
     });
 

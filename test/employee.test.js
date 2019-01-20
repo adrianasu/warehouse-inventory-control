@@ -2,7 +2,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-
+const { Department } = require('../app/department/department.model');
 const { Employee } = require('../app/employee/employee.model');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
 const { app, runServer, closeServer } = require('../app/server');
@@ -73,20 +73,25 @@ describe( 'Employee API resource tests', function(){
        let newEmployee = {
             firstName: "newEmployee",
             lastName: "lastEmployee",
-            employeeId: 123456,
+            employeeId: "123456",
         };
-       
-        return chai.request( app )
-            .post('/api/employee')
-            .set('Authorization', `Bearer ${ jwToken }`)
-            .send( newEmployee )
-            .then( function( res ){
-                checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, employeeKeys, newEmployee );
-            })
-            .catch( function( err ){
-                console.log( err );
-            });
+
+        return Department
+        .findOne()
+        .then(department => {
+            newEmployee.department = department.id
+            return chai.request( app )
+                .post('/api/employee')
+                .set('Authorization', `Bearer ${ jwToken }`)
+                .send( newEmployee )
+        })
+        .then( function( res ){
+            checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
+            checkObjectContent( res, employeeKeys, newEmployee );
+        })
+        .catch( function( err ){
+            console.log( err );
+        });
     });
 
     it("Should not create a new employee bc already exists", function(){
@@ -100,7 +105,7 @@ describe( 'Employee API resource tests', function(){
             return chai.request( app )
                 .post('/api/employee')
                 .set('Authorization', `Bearer ${ jwToken }`)
-                .send(newemployee)
+                .send(newEmployee)
                 .then( function( res ){
                     checkResponse( res, HTTP_STATUS_CODES.BAD_REQUEST, 'object' );
                     expect( res.body ).to.include({message: `An employee with ID ${newEmployee.employeeId} already exists.`});

@@ -15,11 +15,12 @@ myAccountRouter.get('/:employeeId',
     // Users.hasAccess(User.ACCESS_OVERVIEW),
     (req, res) => {
         let employee;
-    return Employee
-    .findOne({
-        employeeId: req.params.employeeId
-    })
-    .then( _employee => {
+        return Employee
+        .findOne({
+            employeeId: req.params.employeeId
+        })
+        .then( _employee => {
+
         employee = _employee;
         if( !employee ){
             let err = { code: HTTP_STATUS_CODES.BAD_REQUEST };

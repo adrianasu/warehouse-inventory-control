@@ -54,7 +54,7 @@ function getCollectionIds( queries, collectionName ){
 }
 
 function getAndSendItems( items ){
-    let serialized = [];
+   
     console.log('Getting items');
 
     if( items.length === 0 ) {
@@ -63,12 +63,9 @@ function getAndSendItems( items ){
         throw err;
     }
     else if ( items.length === 1 ) {
-        return items[0].serialize();
+        return items[0].serializeAll();
     } else {
-        items.forEach( item => {
-            serialized.push( item.serialize() );
-        })
-        return serialized;
+        return items.map( item => item.serializeAll() )
     }    
 }
 
@@ -134,7 +131,7 @@ function getItemsWithoutAsyncBefore( query ){
                     item.isOnShelf() === query.onShelf)  
             })
             .then(items => {
-                return items.map(item => item.serialize());
+                return items.map(item => item.serializeAll());
             })
        // If search query includes warehouse     
     } else {
@@ -155,7 +152,7 @@ function getItemsWithoutAsyncBefore( query ){
                 err.message = 'No items found. Please, try with another values.';
                 throw err;
                 }
-                return items.map(item => item.serialize());
+                return items.map(item => item.serializeAll());
             })
     }
 }
@@ -230,7 +227,7 @@ function doOneAsyncAndGetItems( query ){
                 err.message = 'No items found. Please, try with another values.';
                 throw err;
             }
-            return items.map(item => item.serialize())
+            return items.map(item => item.serializeAll())
         })
         .catch( err => {
             throw err;
@@ -492,7 +489,7 @@ itemRouter.get('/on-shelf/:booleanValue',
             return items.filter( item => item.isOnShelf() === booleanVal )
         })
         .then(items => {
-            return items.map(item => item.serialize())
+            return items.map(item => item.serializeAll())
         })
         .then( serializedItems => {
             return res.status( HTTP_STATUS_CODES.OK ).json( serializedItems )
@@ -677,7 +674,7 @@ itemRouter.put('/check-in/:itemId',
             })
             .then( item => {
                 console.log(`Checking in item with id: ${req.params.itemId}`);
-                return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
+                return res.status(HTTP_STATUS_CODES.OK).json( item.serializeAll() );
             })
             .catch(err => {                
                 if( !err.message ){
@@ -727,6 +724,7 @@ itemRouter.put('/check-out/:itemId',
 
         const validation = Joi.validate(checkOutData, CheckOutJoiSchema);
         if (validation.error) {
+           
             console.error(validation.error.details[0].message)
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message: validation.error.details[0].message
@@ -749,6 +747,7 @@ itemRouter.put('/check-out/:itemId',
                     .findById( req.body.itemId )    
             })
             .then( item => {
+      
                 if( item === null ){
                     let err = { code: 400 };
                     err.message = `Item with id ${req.params.itemId} doesn't exist.`;
@@ -773,7 +772,7 @@ itemRouter.put('/check-out/:itemId',
             })
             .then( item => {
                 console.log(`Checking out item with id: ${req.params.itemId}`);
-                return res.status(HTTP_STATUS_CODES.OK).json( item.serialize() );
+                return res.status(HTTP_STATUS_CODES.OK).json( item.serializeAll() );
             
             })
             .catch(err => {

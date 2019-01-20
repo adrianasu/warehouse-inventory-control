@@ -13,7 +13,14 @@ const categorySchema = mongoose.Schema({
         type: ObjectId,
         ref: "User"
     }
-})
+});
+
+categorySchema.methods.serialize = function () {
+        return {
+            id: this._id,
+            name: this.name,
+        }
+}
 
 categorySchema.pre('find', function (next) {
     this.populate('user');

@@ -21,23 +21,17 @@ let jwToken;
 const itemKeys = ["barcode", "serialNumber"];
 
 function insertItems( searchTerm ){
-    let newItems = [{
-                    barcode: searchTerm,
-                    serialNumber: 1230,
-                    registered: {
-                        date: new Date('2018'),
-                        condition: "Broken"
-                    }}, 
-                 {
-                    barcode: 123,
-                    serialNumber: searchTerm,
-                    registered: {
-                        date: new Date('2018'),
-                        condition: "In-use"
-                    }              
-                }];
+    return Item
+        .find()
+        .then( items =>{
+             items[0].barcode = searchTerm;
+             items[0].save();
+             items[1].serialNumber = searchTerm;
+             items[1].save();
 
-    return Item.insertMany(newItems)
+        })
+        .catch( err => console.log(err))
+
 }
 
 function checkResponse(res, statusCode, resType) {
@@ -377,11 +371,6 @@ it('Should delete item by id', function () {
     })
 
  it('Should check-out an item', function () {
-     let newItem = {
-         barcode: 00112233,
-         serialNumber: 998877
-     }
-
      let checkOutData = {
          barcode: 898989
      }
@@ -391,12 +380,16 @@ it('Should delete item by id', function () {
          .then(employee => {
              checkOutData.employeeId = employee.employeeId;
              return Item
-                 .create(newItem)
+                 .findOne()
          })
-         .then(item => {
+         .then(item => {  
              checkOutData.itemId = item._id;
+             item.checkedOut = [];
+             return item.save();
+        })
+         .then( item => {
              return chai.request(app)
-                 .put(`/api/item/check-out/${item._id}`)
+                 .put(`/api/item/check-out/${item.id}`)
                  .set("Authorization", `Bearer ${jwToken}`)
                  .send(checkOutData)
          })

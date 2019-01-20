@@ -70,15 +70,23 @@ describe( 'Product API resource tests', function(){
     });
 
     it( 'Should create a new product', function(){
+
+        
        let newProduct = {
             name: "newProduct",
             model: "ABC123",
         };
-
+        return Product
+            .findOne()
+            .then( product => {
+                newProduct.manufacturer = product.manufacturer.id;
+                newProduct.category = product.category.id;
+            
             return chai.request( app )
                 .post('/api/product')
                 .set('Authorization', `Bearer ${ jwToken }`)
                 .send( newProduct )
+            })
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
                 checkObjectContent( res, ["name", "model"], newProduct );

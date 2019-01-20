@@ -4,7 +4,7 @@ mongoose.Promise = global.Promise;
 const ObjectId = mongoose.Schema.Types.ObjectId;
 
 const employeeSchema = mongoose.Schema({
-    employeeId: Number,
+    employeeId: String,
     firstName: String,
     lastName: String,
     department: {
@@ -13,15 +13,6 @@ const employeeSchema = mongoose.Schema({
     }
 })
 
-employeeSchema.methods.serialize = function () {
-    return {
-        id: this._id,
-        firstName: this.firstName,
-        lastName: this.lastName,
-        employeeId: this.employeeId,
-        department: this.department
-    }
-}
 
 employeeSchema.pre('find', function (next) {
     this.populate('department');
@@ -32,6 +23,16 @@ employeeSchema.pre('findOne', function (next) {
     this.populate('department');
     next();
 });
+
+employeeSchema.methods.serialize = function () {
+    return {
+        id: this._id,
+        employeeId: this.employeeId,
+        firstName: this.firstName,
+        lastName: this.lastName,
+        department: this.department.name
+    }
+}
 const Employee = mongoose.model("Employee", employeeSchema);
 
 module.exports ={ Employee };

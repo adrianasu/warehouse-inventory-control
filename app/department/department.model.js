@@ -10,7 +10,14 @@ const departmentSchema = mongoose.Schema({
         unique: true,
         default: "NA"
     }
-})
+});
+
+departmentSchema.methods.serialize = function () {
+    return {
+        id: this._id,
+        name: this.name,
+    }
+}
 
 
 const Department = mongoose.model("Department", departmentSchema);

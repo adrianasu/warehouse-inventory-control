@@ -4,6 +4,8 @@ const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
 const { Category } = require('../category/category.model');
+const { Item } = require('../item/item.model');
+const { Product } = require('../product/product.model');
  
 const categoryRouter = express.Router();
 
@@ -20,6 +22,9 @@ categoryRouter.get('/', (req, res) => {
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
         .then(categories => {
             console.log('Getting all categories');
+            return categories.map( cat => cat.serialize())
+        })
+        .then(categories => {
             return res.status(HTTP_STATUS_CODES.OK).json(categories);
         })
         .catch(err => {
@@ -44,7 +49,7 @@ categoryRouter.get('/:categoryId',
                     throw err;
                 }
                 console.log(`Getting category with id: ${req.params.categoryId}`);
-                return res.status( HTTP_STATUS_CODES.OK ).json( category );
+                return res.status( HTTP_STATUS_CODES.OK ).json( category.serialize() );
         })
         .catch(err => {
              if (!err.message) {
@@ -93,7 +98,7 @@ categoryRouter.post('/',
         })
         .then( createdCategory => {
             console.log(`Creating new category`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(createdCategory);
+            return res.status(HTTP_STATUS_CODES.CREATED).json(createdCategory.serialize());
         })
         .catch(err => {
              if (!err.message) {
@@ -149,7 +154,7 @@ categoryRouter.put('/:categoryId',
             })
             .then(updatedCategory => {
                 console.log(`Updating category with id: \`${req.params.categoryId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedCategory);
+                return res.status(HTTP_STATUS_CODES.OK).json(updatedCategory.serialize());
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -162,19 +167,43 @@ categoryRouter.delete('/:categoryId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        return Category
-            .findOneAndDelete({
-                _id: req.params.categoryId
+
+    console.log(`Deleting category with id: \`${req.params.categoryId}\`. Products and items containing this category will be deleted as well.`);
+    return Product
+        .find({
+            category: req.params.categoryId
+        })
+        .then(products => {
+            return products.map(product => product.id);
+        })
+        .then(productIds => {
+            return Item
+                .deleteMany({
+                    product: {
+                        $in: productIds
+                    } // $in selects all the documents  where the val of product equals any value in the Ids array.
+                })
+        })
+        .then(items => {
+            return Product
+            .deleteMany({
+                category: req.params.categoryId
             })
-            .then(deletedCategory => {
-                console.log(`Deleting category with id: \`${req.params.categoryId}\``);
+        })
+        .then( prod => {
+            return Category
+                .findOneAndDelete({
+                    _id: req.params.categoryId
+                })
+            })
+            .then( cat => {
                 return res.status(HTTP_STATUS_CODES.OK).json({
                     deleted: `${req.params.categoryId}`,
                     OK: "true"
                 });
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).res(err);
+                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
             });
 
     });

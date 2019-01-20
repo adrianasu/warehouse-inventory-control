@@ -107,7 +107,7 @@ const ItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(), 
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
             __v: Joi.number()
@@ -121,7 +121,7 @@ const ItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(),
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
             __v: Joi.number()
@@ -135,7 +135,7 @@ const ItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(), 
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
         }),
         authorizedBy: Joi.object().keys({
@@ -144,7 +144,7 @@ const ItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(),
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
             __v: Joi.number()
@@ -208,7 +208,7 @@ const newItemJoiSchema = Joi.object().keys({
                 lastName: Joi.string(),
                 department: Joi.object().keys({
                     _id: Joi.string(),
-                    departmentName: Joi.string(),
+                    name: Joi.string(),
                     __v: Joi.number()
                 }),
                 __v: Joi.number()
@@ -222,7 +222,7 @@ const newItemJoiSchema = Joi.object().keys({
                 lastName: Joi.string(),
                 department: Joi.object().keys({
                     _id: Joi.string(),
-                    departmentName: Joi.string(),
+                    name: Joi.string(),
                     __v: Joi.number()
                 }),
                 __v: Joi.number()
@@ -236,7 +236,7 @@ const newItemJoiSchema = Joi.object().keys({
                 lastName: Joi.string(),
                 department: Joi.object().keys({
                     _id: Joi.string(),
-                    departmentName: Joi.string(),
+                    name: Joi.string(),
                     __v: Joi.number()
                 }),
                 authorizedBy: Joi.object().keys({
@@ -245,7 +245,7 @@ const newItemJoiSchema = Joi.object().keys({
                     lastName: Joi.string(),
                     department: Joi.object().keys({
                         _id: Joi.string(),
-                        departmentName: Joi.string(),
+                        name: Joi.string(),
                         __v: Joi.number()
                     }),
                     __v: Joi.number()
@@ -273,7 +273,7 @@ const UpdateItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(),
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
             __v: Joi.number()
@@ -287,7 +287,7 @@ const UpdateItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(),
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
             __v: Joi.number()
@@ -301,7 +301,7 @@ const UpdateItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(),
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
         authorizedBy: Joi.object().keys({
@@ -310,7 +310,7 @@ const UpdateItemJoiSchema = Joi.object().keys({
             lastName: Joi.string(),
             department: Joi.object().keys({
                 _id: Joi.string(),
-                departmentName: Joi.string(),
+                name: Joi.string(),
                 __v: Joi.number()
             }),
             __v: Joi.number()
@@ -347,17 +347,17 @@ itemSchema.methods.serialize = function(){
 itemSchema.methods.serializeAll = function () {
     return {
         id: this._id,
-        barcode: this.barcode,
         product: this.product.name,
+        barcode: this.barcode,
         model: this.product.model,
         manufacturer: this.product.manufacturer.name,
         category: this.product.category.name,
         serialNumber: this.serialNumber,
-        isCheckedOut: this.isCheckedOut,
         registered: this.registered,
         checkedOut: this.checkedOut,
         checkedIn: this.checkedIn,
         location: this.location,
+        isCheckedOut: this.isCheckedOut,
     }
 }
 
@@ -376,6 +376,9 @@ itemSchema.methods.serializeWithUsefulLife = function () {
         id: this._id,
         barcode: this.barcode,
         product: this.product.name,
+        model: this.product.model,
+        manufacturer: this.product.manufacturer.name,
+        category: this.product.category.name,
         serialNumber: this.serialNumber,
         registered: this.registered,
         checkedOut: this.checkedOut,
@@ -390,7 +393,7 @@ itemSchema.methods.serializeWithUsefulLife = function () {
 itemSchema.methods.isOnShelf = function () {
     // If item has never been checked out or if its more recent operation
     // is "checked in" then it will be considered to be on shelf
-    if ((this.checkedOut.length === 0 && this.checkedIn.length === 0 ) 
+    if ((this.checkedOut.length === 0 ) 
         || (this.checkedOut.length > 0 && this.checkedIn.length > 0
             && this.checkedOut[0].date < this.checkedIn[0].date)) {
             return "true";

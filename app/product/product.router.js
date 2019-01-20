@@ -15,6 +15,9 @@ productRouter.get('/', (req, res) => {
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
         .then( products => {
             console.log('Getting all  products');
+            return products.map( prod => prod.serialize() );
+        })
+        .then( products => {
             return res.status(HTTP_STATUS_CODES.OK).json(products);
         })
         .catch(err => {
@@ -52,21 +55,27 @@ productRouter.post('/',
         })
         .then( product => {
             if( product ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: `A product ${req.body.name} already exists.`
-                });
+                let err = { code: 400 };
+                err.message = `A product ${req.body.name} already exists.`;
+                throw err;
             }
+        })
+        .then(() => {
             // attempt to create a new Product
             return Product
                 .create( newProduct )
-                .then( createdProduct => {
-                    console.log(`Creating new product`);
-                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdProduct);
-                })
-                .catch(err => {
-                    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
-                });
         })
+        .then( createdProduct => {
+            console.log(`Creating new product`);
+            return res.status(HTTP_STATUS_CODES.CREATED).json(createdProduct.serialize());
+        })
+        .catch(err => {
+            if( !err.message ){
+                err.message = 'Something went wrong. Please, try again.';
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
+        
 })
 
 // get products with low stock (its minimumRequired is > 0
@@ -84,6 +93,11 @@ productRouter.get('/low-stock',
                 { 'minimumRequired.quantity': { $gt: 0 }}
             ]})
             .then(products => {
+                 if( products.length === 0 ){
+                    let err = { code: 400 };
+                    err.message = `No consummable products with a minimum required quantity found.`;
+                    throw err;
+                }
                 // add products found in lowStock object. Define
                 // inStock and difference properties to fill later.
                 products.forEach( product =>{
@@ -107,13 +121,14 @@ productRouter.get('/low-stock',
                 },{
                     "isCheckedOut": false
                 }
-            ]})
+                ]})
+            })
             .then(items => {
                 // fill inStock array that belongs to a product
                 // with the items found on shelf.
                 items.forEach( item => {
                     let id = item.product._id;
-                    lowStock[id].inStock.push(item);
+                    lowStock[id].inStock.push(item.serializeAll());
 
                 })
                 return lowStock;
@@ -131,12 +146,13 @@ productRouter.get('/low-stock',
             .then( toArray => {     
                 return res.status(HTTP_STATUS_CODES.OK).json(toArray);
             })
-    })
-    .catch(err => {
-        return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-            message: 'Something went wrong. Please try again'
-        });
-    })
+
+            .catch(err => {
+                if (!err.message) {
+                    err.message = 'Something went wrong. Please, try again.';
+                }
+                return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+            });
 })
 
 // get product by Id
@@ -150,18 +166,21 @@ productRouter.get('/:productId',
             _id: req.params.productId
         })
         .then(product => {
-      
             console.log(`Getting item with id: ${req.params.productId}`);
             if( !product ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: 'No product found with that id.'
-                });
+                let err = { code: 400 };
+                err.message = 'No product found with that id.';
+                throw err;
             }
-            return res.status( HTTP_STATUS_CODES.OK ).json( product.serialize() );
+             
+          return res.status( HTTP_STATUS_CODES.OK ).json( product.serialize() );
         })
         .catch(err => {
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json( err );
-        })
+            if (!err.message) {
+                err.message = 'Something went wrong. Please, try again.';
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
 });
 
 
@@ -217,7 +236,7 @@ productRouter.put('/:productId', jwtPassportMiddleware,
             })
             .then(updatedProduct => {
                 console.log(`Updating product with id: \`${req.params.productId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedProduct);
+                return res.status(HTTP_STATUS_CODES.OK).json(updatedProduct.serialize());
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -229,20 +248,27 @@ productRouter.delete('/:productId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        return Product
-            .findOneAndDelete({
-                _id: req.params.productId
-            })
-            .then(deletedProduct => {
-                console.log(`Deleting Product with id: \`${req.params.productId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json({
-                    deleted: `${req.params.productId}`,
-                    OK: "true"
-                });
-            })
-            .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).res(err);
+
+        console.log(`Deleting Product with id: \`${req.params.productId}\` and items that contain that product.`);
+        return Item
+            .deleteMany({
+                product: req.params.productId
+        })
+        .then( items => {
+            return Product
+                .findOneAndDelete({
+                    _id: req.params.productId
+                })
+        })
+        .then(deletedProduct => {
+            return res.status(HTTP_STATUS_CODES.OK).json({
+                deleted: `${req.params.productId}`,
+                OK: "true"
             });
+        })
+        .catch(err => {
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
 
     });
 

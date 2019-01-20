@@ -84,8 +84,11 @@ userRouter.post('/', (req, res) => {
       
 });
 
-// retrieve all users' name and access level
-userRouter.get('/', jwtPassportMiddleware, User.hasAccess(User.ACCESS_PUBLIC), (req, res) => {
+// retrieve all users' employee, email and access level
+userRouter.get('/', 
+// jwtPassportMiddleware, 
+// User.hasAccess(User.ACCESS_PUBLIC), 
+(req, res) => {
     
     return Users
         .find({}, null, { sort: { accessLevel: -1 }}) // sort by access level in descendent order
@@ -123,7 +126,9 @@ User.hasAccess(User.ACCESS_OVERVIEW),
     // we only support a subset of fields being updateable.
     // If the user sent over any of them 
     // we update those values on the database
-    const updateableFields = ["password", "email", "accessLevel"];
+    const updateableFields = ["email", "accessLevel"];
+    // const updateableFields = ["password", "email", "accessLevel"];
+
     // check what fields were sent in the request body to update
     const toUpdate = {};
     updateableFields.forEach(field => {
@@ -151,14 +156,16 @@ User.hasAccess(User.ACCESS_OVERVIEW),
                 throw err;
           
         }
-        // users with accessLevel equal to Overview or Public are 
-        // allowed to update their own email only.
-        if( req.user.accessLevel <= User.ACCESS_PUBLIC &&
-            req.user.email !== user.email ){
+        // users are allowed to update their own email only.
+        if( req.user.email !== user.email ){
                 let err = { code: HTTP_STATUS_CODES.UNAUTHORIZED };
-                err.message = `Unauthorized. You're only allowed to edit your email.`;
+                err.message = `Unauthorized.`;
                 throw err;
         }
+
+        // users are allowed to change their own password only.
+        
+
                 
         // do not allow to update "admin", "overview" or "public" demo users
         let email = user.email;

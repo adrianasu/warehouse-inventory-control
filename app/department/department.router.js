@@ -4,6 +4,7 @@ const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
 const { Department } = require('../department/department.model');
+const { Employee } = require('../employee/employee.model');
  
 const departmentRouter = express.Router();
 
@@ -18,6 +19,9 @@ const DepartmentJoiSchema = Joi.object().keys({
 departmentRouter.get('/', (req, res) => {
     return Department
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
+        .then(departments => {
+            return departments.map(dep => dep.serialize())
+        })
         .then(departments => {
             console.log('Getting all departments');
             return res.status(HTTP_STATUS_CODES.OK).json(departments);
@@ -43,7 +47,7 @@ departmentRouter.get('/:departmentId',
                 throw err;
             }
             console.log(`Getting department with id: ${req.params.departmentId}`);
-            return res.status( HTTP_STATUS_CODES.OK ).json( department );
+            return res.status( HTTP_STATUS_CODES.OK ).json( department.serialize());
         })
         .catch(err => {
             if (!err.message) {
@@ -92,7 +96,7 @@ departmentRouter.post('/',
         })
         .then( createdDepartment => {
             console.log(`Creating new department`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(createdDepartment);
+            return res.status(HTTP_STATUS_CODES.CREATED).json(createdDepartment.serialize());
         })
         .catch(err => {
             if (!err.message) {
@@ -149,7 +153,7 @@ departmentRouter.put('/:departmentId',
             })
             .then(updatedDepartment => {
                 console.log(`Updating department with id: \`${req.params.departmentId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedDepartment);
+                return res.status(HTTP_STATUS_CODES.OK).json(updatedDepartment.serialize());
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
@@ -162,20 +166,43 @@ departmentRouter.delete('/:departmentId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        return Department
+        console.log(`Deleting department with id: \`${req.params.departmentId}\` and all the employees in that department and their users.`);
+        
+        return Employee
+        .find({ 
+            department: req.params.departmentId
+        })
+        .then(employees => {
+            return employees.map(employee => employee.id)
+        })
+        .then( employeeIds => {
+            return User.User
+                .deleteMany({ employee: {
+                        $in: employeeIds
+                    }
+                })
+        })
+        .then( () => {
+            return Employee
+                .deleteMany({
+                    department: req.params.departmentId
+                })
+        })
+        .then(employees => {
+            return Department
             .findOneAndDelete({
                 _id: req.params.departmentId
             })
-            .then(deletedDepartment => {
-                console.log(`Deleting department with id: \`${req.params.departmentId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json({
-                    deleted: `${req.params.departmentId}`,
-                    OK: "true"
-                });
-            })
-            .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).res(err);
+        })
+        .then(deletedDepartment => {
+            return res.status(HTTP_STATUS_CODES.OK).json({
+                deleted: `${req.params.departmentId}`,
+                OK: "true"
             });
+        })
+        .catch(err => {
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
 
     });
 

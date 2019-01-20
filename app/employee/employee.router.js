@@ -11,14 +11,11 @@ const employeeRouter = express.Router();
 const EmployeeJoiSchema = Joi.object().keys({
     _id: Joi.string(),
     __v: Joi.number(),
-    employeeId: Joi.number(),
+    employeeId: Joi.string(),
     firstName: Joi.string(),
     lastName: Joi.string(),
-    department: Joi.object().keys({
-        name: Joi.string(),
-         _id: Joi.string(),
-        __v: Joi.number(),
-    })
+    department: Joi.string(),
+
 });
 
 // get all employees
@@ -81,6 +78,7 @@ employeeRouter.post('/',
     // validate new employee data using Joi schema
     const validation = Joi.validate( newEmployee, EmployeeJoiSchema );
     if( validation.error ){
+        console.log(validation.error.details[0].message)
         return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
             message: validation.error.details[0].message
         });
@@ -104,8 +102,14 @@ employeeRouter.post('/',
                 .create( newEmployee )
         })
         .then( createdEmployee => {
+            return Employee
+                .findOne({
+                    employeeId: req.body.employeeId
+                })
+        })
+        .then(employee => {
             console.log(`Creating new employee`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(createdEmployee.serialize());
+            return res.status(HTTP_STATUS_CODES.CREATED).json(employee.serialize());
         })
         .catch(err => {
             if (!err.message) {
@@ -188,20 +192,34 @@ employeeRouter.delete('/:employeeId',
     //jwtPassportMiddleware,
     //User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        return Employee
+
+        console.log(`Deleting employee with id: \`${req.params.employeeId}\` and his/her user.`);
+
+    return Employee
+        .findOne({
+            employeeId: req.params.employeeId
+        })
+        .then( employee => {
+            return User.User
+            .findOneAndDelete({ 
+                id: employee.id 
+            })
+        })
+        .then(() => {     
+            return Employee
             .findOneAndDelete({
                 employeeId: req.params.employeeId
             })
-            .then(deletedEmployee => {
-                console.log(`Deleting employee with id: \`${req.params.employeeId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json({
-                    deleted: `${req.params.employeeId}`,
-                    OK: "true"
-                });
-            })
-            .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        })
+        .then(deletedEmployee => {
+            return res.status(HTTP_STATUS_CODES.OK).json({
+                deleted: `${req.params.employeeId}`,
+                OK: "true"
             });
+        })
+        .catch(err => {
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
 
     });
 

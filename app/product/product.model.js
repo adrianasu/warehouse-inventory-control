@@ -15,8 +15,8 @@ const productSchema = mongoose.Schema({
     },
     model: String,
     consummable: {
-            type: Boolean,
-            default: false
+        type: Boolean,
+        default: false
     },
     minimumRequired: {
         quantity: {
@@ -34,30 +34,14 @@ const productSchema = mongoose.Schema({
 const ProductJoiSchema = Joi.object().keys({
     _id: Joi.string(),
     name: Joi.string(),
-    manufacturer: Joi.object().keys({
-        _id: Joi.string(),
-        name: Joi.string(),
-        __v: Joi.number()
-    }),
+    manufacturer: Joi.string(),
     model: Joi.string(),
     consummable: Joi.boolean(),
     minimumRequired: Joi.object().keys({
         quantity: Joi.number(),
         units: Joi.string()
     }),
-    category: Joi.object().keys({
-        _id: Joi.string(),
-        name: Joi.string(),
-        addedBy: Joi.object().keys({
-            _id: Joi.string(),
-            firstName: Joi.string().min(1).trim(),
-            lastName: Joi.string().min(1).trim(),
-            username: Joi.string().min(4).max(30).trim(),
-            password: Joi.string().min(7).max(30).trim(),
-            accessLevel: Joi.number().optional(),
-            __v: Joi.number()
-        }),
-    }),
+    category: Joi.string(),
     __v: Joi.number()
 });
 
