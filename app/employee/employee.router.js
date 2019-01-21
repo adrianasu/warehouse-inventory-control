@@ -4,7 +4,8 @@ const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
 const { Employee } = require('../employee/employee.model');
- 
+const { Department } = require('../department/department.model');
+
 const employeeRouter = express.Router();
 
 // schema to validate employee content
@@ -14,7 +15,7 @@ const EmployeeJoiSchema = Joi.object().keys({
     employeeId: Joi.string(),
     firstName: Joi.string(),
     lastName: Joi.string(),
-    department: Joi.string(),
+    department: Joi.string()
 
 });
 
@@ -124,12 +125,11 @@ employeeRouter.put('/:employeeId',
     //jwtPassportMiddleware,
     //  User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        const updateEmployee = {
-            employeeId: req.body.employeeId,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            department: req.body.department,
-        }
+        // const updateEmployee = {
+        //     employeeId: req.body.employeeId,
+        //     firstName: req.body.firstName,
+        //     lastName: req.body.lastName,
+        // }
 
         // check that id in request body matches id in request path
         if (req.params.employeeId != req.body.employeeId) {
@@ -147,9 +147,10 @@ employeeRouter.put('/:employeeId',
         // check what fields were sent in the request body to update
         const toUpdate = {};
         updateableFields.forEach(field => {
-            if (field in req.body) {
+            if (field in req.body ) {
                 toUpdate[field] = req.body[field];
             }
+         
         });
         // if request body doesn't contain any updateable field send error message
         if (toUpdate.length === 0) {
@@ -160,7 +161,9 @@ employeeRouter.put('/:employeeId',
             });
         }
 
-        const validation = Joi.validate(updateEmployee, EmployeeJoiSchema);
+        
+
+        const validation = Joi.validate(toUpdate, EmployeeJoiSchema);
         if (validation.error) {
             console.log(validation.error);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
@@ -168,7 +171,9 @@ employeeRouter.put('/:employeeId',
             });
         }
 
-        Employee
+
+
+        return Employee
             // $set operator replaces the value of a field with the specified value
             .findOneAndUpdate({
                 employeeId: req.params.employeeId
@@ -179,7 +184,7 @@ employeeRouter.put('/:employeeId',
             })
             .then(updatedEmployee => {
                 console.log(`Updating employee with id: \`${req.params.employeeId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedEmployee);
+                return res.status(HTTP_STATUS_CODES.OK).json({updated: updatedEmployee});
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);

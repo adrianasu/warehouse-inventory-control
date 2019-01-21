@@ -3,11 +3,13 @@ const express = require('express');
 const { HTTP_STATUS_CODES } = require('../config');
 // const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 
-const { Item } = require('../item/item.model');
-const { Employee } = require('../employee/employee.model');
-const { Product } = require('../product/product.model');
 const { Category } = require('../category/category.model');
+const { Department } = require('../department/department.model');
+const { Employee } = require('../employee/employee.model');
+const { Item } = require('../item/item.model');
 const { Manufacturer } = require('../manufacturer/manufacturer.model');
+const { Product } = require('../product/product.model');
+const { levels } = require('../user/user.model');
 
 
 const fieldsRouter = express.Router();
@@ -38,8 +40,9 @@ function findAllNamesAndIds( CollectionName ){
         })
 }
 
-// get searchable fields (Categories, Products, Manufacturers,
-// Employees and Warehouses)
+// get searchable fields: Categories, Products, Manufacturers,
+// Employees, Departments, AccessLevels, Units(from Product.minimumRequired)
+// and Warehouses
 fieldsRouter.get('/', (req, res) => {
     let fields = {};
    
@@ -58,11 +61,24 @@ fieldsRouter.get('/', (req, res) => {
         })
         .then(employees => {
             fields.employee = employees;
+            return findAllNamesAndIds(Department);
+        })
+        .then(departments => {
+            fields.department = departments;  
             return Item
-                .distinct('location.warehouse')
+            .distinct('location.warehouse')
         })
         .then(warehouses => {
             fields.warehouse = warehouses.sort();
+            return Product
+            .find({"minimumRequired.quantity": { $gt: 0 }})
+        })
+        .then(products => {
+            let units = products.map( product => product.minimumRequired.units )
+            // send a list of units with no repeated values
+            fields.units = units.filter((unit, index, self) => self.indexOf(unit) === index)
+            // send accessLevels
+            fields.accessLevel = levels;
             return res.status(HTTP_STATUS_CODES.OK ).json( fields );
         })
         .catch( err => {
@@ -70,7 +86,6 @@ fieldsRouter.get('/', (req, res) => {
                 message: 'Something went wrong. Please try again'
             })
         })
-     
 })
 
 module.exports = { fieldsRouter };

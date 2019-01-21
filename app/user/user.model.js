@@ -103,5 +103,5 @@ userSchema.statics.ACCESS_ADMIN = ACCESS_ADMIN;
 const User = mongoose.model( 'user', userSchema );
 
 module.exports = {
-    User, UserJoiSchema, UpdateUserJoiSchema, hasAccess: userSchema.statics.hasAccess, ACCESS_BASIC, ACCESS_OVERVIEW, ACCESS_PUBLIC, ACCESS_ADMIN
+    User, UserJoiSchema, UpdateUserJoiSchema, hasAccess: userSchema.statics.hasAccess, ACCESS_BASIC, ACCESS_OVERVIEW, ACCESS_PUBLIC, ACCESS_ADMIN, levels
 };

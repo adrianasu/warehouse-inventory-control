@@ -15,7 +15,7 @@ userRouter.post('/', (req, res) => {
     const newUser = {
         employeeId: req.body.employeeId,
         email: req.body.email,
-        password: req.body.password
+        password: req.body.password,
     };
     // validate new user data using Joi
     const validation = Joi.validate( newUser, User.UserJoiSchema );
@@ -190,7 +190,8 @@ User.hasAccess(User.ACCESS_OVERVIEW),
             })
             .then(updatedUser => {
                 console.log(`Updating user with id: \`${req.params.userId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedUser.serialize());
+                return res.status(HTTP_STATUS_CODES.OK).json({
+                            updated: updatedUser.serialize()});
             })
          })
          .catch(err => {

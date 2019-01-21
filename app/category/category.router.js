@@ -154,7 +154,7 @@ categoryRouter.put('/:categoryId',
             })
             .then(updatedCategory => {
                 console.log(`Updating category with id: \`${req.params.categoryId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedCategory.serialize());
+                return res.status(HTTP_STATUS_CODES.OK).json({updated: updatedCategory.serialize()});
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);

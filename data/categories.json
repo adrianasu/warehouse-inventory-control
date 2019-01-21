@@ -1,5 +1,6 @@
-{"_id":{"$oid":"5c3e59f23f6b3f21c0ec4aa7"},"name":"Automotive","addedBy":{"$oid":"5c3e59f23f6b3f21c0ec4a9f"},"__v":0}
-{"_id":{"$oid":"5c3e59f23f6b3f21c0ec4aa8"},"name":"Garden","addedBy":{"$oid":"5c3e59f23f6b3f21c0ec4a9e"},"__v":0}
-{"_id":{"$oid":"5c3e59f23f6b3f21c0ec4aa9"},"name":"Computers","addedBy":{"$oid":"5c3e59f23f6b3f21c0ec4a9e"},"__v":0}
-{"_id":{"$oid":"5c3e59f23f6b3f21c0ec4aaa"},"name":"Kids","addedBy":{"$oid":"5c3e59f23f6b3f21c0ec4a9d"},"__v":0}
-{"_id":{"$oid":"5c3e59f23f6b3f21c0ec4aab"},"name":"Baby","addedBy":{"$oid":"5c3e59f23f6b3f21c0ec4aa0"},"__v":0}
+{"_id":{"$oid":"5c44efdb071b4577641273b9"},"name":"Home","addedBy":{"$oid":"5c44efdb071b4577641273b0"},"__v":0}
+{"_id":{"$oid":"5c44efdb071b4577641273ba"},"name":"Tools","addedBy":{"$oid":"5c44efdb071b4577641273b2"},"__v":0}
+{"_id":{"$oid":"5c44efdb071b4577641273bb"},"name":"Health","addedBy":{"$oid":"5c44efdb071b4577641273b3"},"__v":0}
+{"_id":{"$oid":"5c44efdb071b4577641273bc"},"name":"Sports","addedBy":{"$oid":"5c44efdb071b4577641273b3"},"__v":0}
+{"_id":{"$oid":"5c44efdb071b4577641273bd"},"name":"Movies","addedBy":{"$oid":"5c44efdb071b4577641273b1"},"__v":0}
+{"_id":{"$oid":"5c44efde071b457764127445"},"name":"newCat","__v":0}

@@ -69,7 +69,7 @@ describe( 'Category API resource tests', function(){
         return closeServer();
     });
 
-    it( 'Should create a new category', function(){
+    it.only( 'Should create a new category', function(){
        let newCategory = {
             name: "newCat"
         };

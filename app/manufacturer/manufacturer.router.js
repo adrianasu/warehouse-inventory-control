@@ -145,7 +145,7 @@ manufacturerRouter.put('/:manufacturerId',
             })
             .then(updatedManufacturer => {
                 console.log(`Updating manufacturer with id: \`${req.params.manufacturerId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedManufacturer.serialize());
+                return res.status(HTTP_STATUS_CODES.OK).json({updated: updatedManufacturer.serialize()});
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);

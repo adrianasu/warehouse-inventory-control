@@ -153,7 +153,8 @@ departmentRouter.put('/:departmentId',
             })
             .then(updatedDepartment => {
                 console.log(`Updating department with id: \`${req.params.departmentId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedDepartment.serialize());
+                return res.status(HTTP_STATUS_CODES.OK).json({
+                            updated: updatedDepartment.serialize()});
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);

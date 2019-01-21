@@ -266,8 +266,15 @@ itemRouter.post('/',
         barcode: req.body.barcode,
         product: req.body.product,
         serialNumber: req.body.serialNumber,
-        registered: req.body.registered,
-        location: req.body.location
+        registered: {
+            condition: req.body.condition,
+        },
+        location: {
+            warehouse: req.body.warehouse,
+            aisle: req.body.aisle,
+            shelf: req.body.shelf,
+            bin: req.body.bin
+        }
     }
   
     // validate new item data using Joi
@@ -547,16 +554,16 @@ itemRouter.put('/:itemId',
     // we only support a subset of fields being updateable
     // if the user sent over any of them 
     // we update those values on the database
-    const updateableFields = ["location"];
+    const updateableFields = ["warehouse", "aisle", "shelf", "bin"];
     // check what fields were sent in the request body to update
-    const toUpdate = {};
+    const toUpdate = { location: {} };
     updateableFields.forEach(field => {
         if (field in req.body) {
-            toUpdate[field] = req.body[field];
+            toUpdate.location[field] = req.body[field];
         }
     });
     // if request body doesn't contain any updateable field send error message
-    if (toUpdate.length === 0) {
+    if (Object.keys(toUpdate.location).length === 0) {
         const message = `Missing \`${updateableFields.join('or ')}\` in request body`;
         console.error(message);
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
@@ -582,7 +589,7 @@ itemRouter.put('/:itemId',
         })
         .then(updatedItem => {
             console.log(`Updating item with id: \`${req.params.itemId}\``);
-            return res.status(HTTP_STATUS_CODES.OK).json(updatedItem.serialize());
+            return res.status(HTTP_STATUS_CODES.OK).json({updated: updatedItem.serialize()});
         })
         .catch(err => {
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).jsonjson({

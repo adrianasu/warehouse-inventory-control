@@ -37,7 +37,10 @@ productRouter.post('/',
         manufacturer: req.body.manufacturer,
         model: req.body.model,
         consummable: req.body.consummable,
-        minimumRequired: req.body.minimumRequired,
+        minimumRequired: {
+            quantity: req.body.quantity,
+            units: req.body.units
+        },
         category: req.body.category,
     };
     // validate newProduct data using Joi schema
@@ -186,8 +189,9 @@ productRouter.get('/:productId',
 
 
 // update product by Id
-productRouter.put('/:productId', jwtPassportMiddleware,
-    User.hasAccess(User.ACCESS_ADMIN),
+productRouter.put('/:productId', 
+//jwtPassportMiddleware,
+  //  User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
         //console.log("BODY ", req.body);
         // check that id in request body matches id in request path
@@ -199,17 +203,23 @@ productRouter.put('/:productId', jwtPassportMiddleware,
             });
         }
 
-    
-        const updateableFields = ["name", "manufacturer", "model", "consummable", "minimumRequired", "category"];
+
+        const minimumReq = ["quantity", "units"];
+        const updateableFields = ["name", "manufacturer", "model", "consummable", "quantity", "units", "category"];
         // check what fields were sent in the request body to update
         const toUpdate = {};
+        
         updateableFields.forEach(field => {
-            if (field in req.body) {
+            if (field in req.body && !minimumReq.includes(field)) {
                 toUpdate[field] = req.body[field];
+            } else if (field in req.body && minimumReq.includes(field)){
+                toUpdate.minimumRequired = {
+                    [field]: req.body[field]
+                }
             }
         });
         // if request body doesn't contain any updateable field send error message
-        if (toUpdate.length === 0) {
+        if (Object.keys(toUpdate).length === 0) {
             const message = `Missing \`${updateableFields.join('or ')}\` in request body`;
             console.error(message);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
@@ -236,7 +246,7 @@ productRouter.put('/:productId', jwtPassportMiddleware,
             })
             .then(updatedProduct => {
                 console.log(`Updating product with id: \`${req.params.productId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json(updatedProduct.serialize());
+                return res.status(HTTP_STATUS_CODES.OK).json({updated: updatedProduct.serialize()});
             })
             .catch(err => {
                 return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
