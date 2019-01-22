@@ -26,9 +26,9 @@ function checkResponse(res, statusCode, resType) {
 }
 
 function checkObjectContent( res, departmentKeys, newdepartment ){
-    expect(res.body).to.include.keys(departmentKeys);
+    expect(res).to.include.keys(departmentKeys);
     departmentKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newdepartment[key]);
+        expect(res[key]).to.equal(newdepartment[key]);
     });
 }
 
@@ -80,7 +80,7 @@ describe( 'department API resource tests', function(){
             .send( newDepartment )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, departmentKeys, newDepartment );
+                checkObjectContent( res.body, departmentKeys, newDepartment );
             })
             .catch( function( err ){
                 console.log( err );
@@ -161,7 +161,7 @@ describe( 'department API resource tests', function(){
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                checkObjectContent(res, ["name"], updateDepartment);
+                checkObjectContent(res.body.updated, ["name"], updateDepartment);
             })
             .catch(function (err) {
                 console.log(err);

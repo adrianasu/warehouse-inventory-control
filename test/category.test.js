@@ -26,9 +26,9 @@ function checkResponse(res, statusCode, resType) {
 }
 
 function checkObjectContent( res, categoryKeys, newCategory ){
-    expect(res.body).to.include.keys(categoryKeys);
+    expect(res).to.include.keys(categoryKeys);
     categoryKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newCategory[key]);
+        expect(res[key]).to.equal(newCategory[key]);
     });
 }
 
@@ -69,7 +69,7 @@ describe( 'Category API resource tests', function(){
         return closeServer();
     });
 
-    it.only( 'Should create a new category', function(){
+    it( 'Should create a new category', function(){
        let newCategory = {
             name: "newCat"
         };
@@ -80,7 +80,7 @@ describe( 'Category API resource tests', function(){
             .send( newCategory )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, categoryKeys, newCategory );
+                checkObjectContent( res.body, categoryKeys, newCategory );
             })
             .catch( function( err ){
                 console.log( err );
@@ -161,7 +161,7 @@ describe( 'Category API resource tests', function(){
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                checkObjectContent(res, ["name"], updateCategory);
+                checkObjectContent(res.body.updated, ["name"], updateCategory);
             })
             .catch(function (err) {
                 console.log(err);

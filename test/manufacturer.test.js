@@ -26,9 +26,9 @@ function checkResponse(res, statusCode, resType) {
 }
 
 function checkObjectContent( res, manufacturerKeys, newManufacturer ){
-    expect(res.body).to.include.keys(manufacturerKeys);
+    expect(res).to.include.keys(manufacturerKeys);
     manufacturerKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newManufacturer[key]);
+        expect(res[key]).to.equal(newManufacturer[key]);
     });
 }
 
@@ -80,7 +80,7 @@ describe( 'Manufacturer API resource tests', function(){
             .send( newManufacturer )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, manufacturerKeys, newManufacturer );
+                checkObjectContent( res.body, manufacturerKeys, newManufacturer );
             })
             .catch( function( err ){
                 console.log( err );
@@ -161,7 +161,7 @@ describe( 'Manufacturer API resource tests', function(){
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                checkObjectContent(res, ["name"], updateManufacturer);
+                checkObjectContent(res.body.updated, ["name"], updateManufacturer);
             })
             .catch(function (err) {
                 console.log(err);

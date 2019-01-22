@@ -25,10 +25,10 @@ function checkResponse(res, statusCode, resType) {
     expect(res.body).to.be.a(resType);
 }
 
-function checkObjectContent( res, employeeKeys, newemployee ){
-    expect(res.body).to.include.keys(employeeKeys);
+function checkObjectContent( res, employeeKeys, newEmployee ){
+    expect(res).to.include.keys(employeeKeys);
     employeeKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newemployee[key]);
+        expect(res[key]).to.equal(newEmployee[key]);
     });
 }
 
@@ -87,7 +87,7 @@ describe( 'Employee API resource tests', function(){
         })
         .then( function( res ){
             checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-            checkObjectContent( res, employeeKeys, newEmployee );
+            checkObjectContent( res.body, employeeKeys, newEmployee );
         })
         .catch( function( err ){
             console.log( err );
@@ -167,7 +167,7 @@ describe( 'Employee API resource tests', function(){
             .then(function (res) {
                
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                checkObjectContent(res, ['lastName'], updateEmployee);
+                checkObjectContent(res.body.updated, ['lastName'], updateEmployee);
             })
             .catch(function (err) {
                 console.log(err);

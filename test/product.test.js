@@ -26,9 +26,9 @@ function checkResponse(res, statusCode, resType) {
 }
 
 function checkObjectContent( res, productKeys, newProduct ){
-    expect(res.body).to.include.keys(productKeys);
+    expect(res).to.include.keys(productKeys);
     productKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newProduct[key]);
+        expect(res[key]).to.equal(newProduct[key]);
     });
 }
 
@@ -89,7 +89,7 @@ describe( 'Product API resource tests', function(){
             })
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, ["name", "model"], newProduct );
+                checkObjectContent( res.body, ["name", "model"], newProduct );
             })
             .catch( function( err ){
                 console.log( err );
@@ -163,7 +163,7 @@ describe( 'Product API resource tests', function(){
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                checkObjectContent(res, ["name"], updateProduct);
+                checkObjectContent(res.body.updated, ["name"], updateProduct);
             })
             .catch(function (err) {
                 console.log(err);

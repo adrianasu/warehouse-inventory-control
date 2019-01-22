@@ -90,7 +90,6 @@ describe( 'Items API resource tests', function(){
         barcode: 123456,
         serialNumber: 567890,
         registered: {
-            date: new Date('2018'),
             condition: "New"
         }
        }
@@ -102,7 +101,7 @@ describe( 'Items API resource tests', function(){
             .then( function( res ){
            
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, itemKeys, newItem );
+                checkObjectContent(res.body, itemKeys, newItem);
             })
             .catch( function( err ){
                 console.log( err );
@@ -238,7 +237,7 @@ describe( 'Items API resource tests', function(){
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                expect(res.body.location).to.deep.equal(updateItem.location);
+                expect(res.body.updated.location).to.deep.equal(updateItem.location);
             })
             .catch(function (err) {
                 console.log(err);

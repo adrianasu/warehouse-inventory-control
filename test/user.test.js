@@ -26,9 +26,9 @@ function checkResponse( res, statusCode, resType ){
 }
 
 function checkObjectContent( res, userKeys, newUser ){
-    expect(res.body).to.include.keys(userKeys);
+    expect(res).to.include.keys(userKeys);
     userKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newUser[key]);
+        expect(res[key]).to.equal(newUser[key]);
     });
 }
 
@@ -90,7 +90,7 @@ describe( 'Users API resource tests', function(){
             })
             .then(function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res, newUserKeys, newUser );
+                checkObjectContent( res.body, newUserKeys, newUser );
             });
     });
 
@@ -137,7 +137,7 @@ describe( 'Users API resource tests', function(){
             })
             .then(function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.OK, 'object' );
-                //checkObjectContent( res, Object.keys( updateUser ), updateUser );
+                checkObjectContent( res.body.updated, Object.keys( updateUser ), updateUser );
             })
             .catch(function( err ){
                 console.log( err );
