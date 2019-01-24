@@ -89,7 +89,7 @@ describe( 'Product API resource tests', function(){
             })
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res.body, ["name", "model"], newProduct );
+                checkObjectContent( res.body.created, ["name", "model"], newProduct );
             })
             .catch( function( err ){
                 console.log( err );

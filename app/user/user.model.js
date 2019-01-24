@@ -38,10 +38,23 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.serialize = function(){
     return {
         id: this._id,
+        employeeId: this.employee.employeeId,
+        firstName: this.employee.firstName,
+        lastName: this.employee.lastName,
+        department: this.employee.department.name,
+        email: this.email,
+        accessLevel: this.accessLevel,
+    
+    };
+};
+
+userSchema.methods.serializeLogIn = function () {
+    return {
+        id: this._id,
         employee: this.employee,
         email: this.email,
         accessLevel: this.accessLevel,
-        levels
+   
     };
 };
 

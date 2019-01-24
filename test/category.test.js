@@ -80,7 +80,7 @@ describe( 'Category API resource tests', function(){
             .send( newCategory )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res.body, categoryKeys, newCategory );
+                checkObjectContent( res.body.created, categoryKeys, newCategory );
             })
             .catch( function( err ){
                 console.log( err );

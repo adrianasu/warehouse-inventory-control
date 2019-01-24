@@ -87,7 +87,7 @@ describe( 'Employee API resource tests', function(){
         })
         .then( function( res ){
             checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-            checkObjectContent( res.body, employeeKeys, newEmployee );
+            checkObjectContent( res.body.created, employeeKeys, newEmployee );
         })
         .catch( function( err ){
             console.log( err );
@@ -95,13 +95,16 @@ describe( 'Employee API resource tests', function(){
     });
 
     it("Should not create a new employee bc already exists", function(){
-        let newEmployee = {};
+        let newEmployee = {
+            firstName: "New",
+            lastName: "Employee"
+        };
         
         return Employee 
         .findOne()
         .then( employee => {
             newEmployee.employeeId = employee.employeeId;
-        
+            newEmployee.department = employee.department.id
             return chai.request( app )
                 .post('/api/employee')
                 .set('Authorization', `Bearer ${ jwToken }`)

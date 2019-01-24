@@ -6,7 +6,7 @@ const { HTTP_STATUS_CODES } = require('../config');
 const { Category } = require('../category/category.model');
 const { Department } = require('../department/department.model');
 const { Employee } = require('../employee/employee.model');
-const { Item } = require('../item/item.model');
+const { Item, condition } = require('../item/item.model');
 const { Manufacturer } = require('../manufacturer/manufacturer.model');
 const { Product } = require('../product/product.model');
 const { levels } = require('../user/user.model');
@@ -79,6 +79,8 @@ fieldsRouter.get('/', (req, res) => {
             fields.units = units.filter((unit, index, self) => self.indexOf(unit) === index)
             // send accessLevels
             fields.accessLevel = levels;
+            // send condition options for registering items
+            fields.condition = condition;
             return res.status(HTTP_STATUS_CODES.OK ).json( fields );
         })
         .catch( err => {

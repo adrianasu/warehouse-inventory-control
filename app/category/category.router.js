@@ -98,7 +98,8 @@ categoryRouter.post('/',
         })
         .then( createdCategory => {
             console.log(`Creating new category`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(createdCategory.serialize());
+            return res.status(HTTP_STATUS_CODES.CREATED).json({
+                        created: createdCategory.serialize( ) } );
         })
         .catch(err => {
              if (!err.message) {

@@ -5,6 +5,7 @@ mongoose.Promise = global.Promise;
 
 const { app, runServer, closeServer } = require('../app/server');
 const { TEST_DATABASE_URL, HTTP_STATUS_CODES } = require('../app/config');
+const { Department } = require('../app/department/department.model');
 const { Employee } = require('../app/employee/employee.model');
 const { User } = require('../app/user/user.model');
 const { getTestUserToken } = require('./fakeUser');
@@ -16,7 +17,7 @@ const expect = chai.expect;
 chai.use(chaiHttp);
 
 let jwToken;
-const userKeys = ['id', 'email', 'employee', 'accessLevel', 'levels'];
+const userKeys = ['id', 'email', 'accessLevel', 'department', 'employeeId','firstName', 'lastName'];
 const newUserKeys = ['email'];
 
 function checkResponse( res, statusCode, resType ){
@@ -75,10 +76,16 @@ describe( 'Users API resource tests', function(){
         let newEmployee = {
             firstName: "Name",
             lastName: "Last",
-            employeeId: 123456789,
+            employeeId: 123456789
         }
-        return Employee
+        return Department
+            .findOne()
+        .then( department =>{
+            newEmployee.department = department.id;
+        
+            return Employee
             .create(newEmployee)
+        })
             .then( employee => {
                 newUser.employeeId = newEmployee.employeeId;
             })

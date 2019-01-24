@@ -189,9 +189,14 @@ User.hasAccess(User.ACCESS_OVERVIEW),
                 new: true
             })
             .then(updatedUser => {
+                // Find user using mongoose findOne to populate our data.
+                return Users
+                    .findOne({ _id: req.params.userId })
+            })
+            .then( user => {
                 console.log(`Updating user with id: \`${req.params.userId}\``);
                 return res.status(HTTP_STATUS_CODES.OK).json({
-                            updated: updatedUser.serialize()});
+                            updated: user.serialize()});
             })
          })
          .catch(err => {

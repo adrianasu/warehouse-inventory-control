@@ -96,7 +96,7 @@ departmentRouter.post('/',
         })
         .then( createdDepartment => {
             console.log(`Creating new department`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(createdDepartment.serialize());
+            return res.status(HTTP_STATUS_CODES.CREATED).json({ created: createdDepartment.serialize() });
         })
         .catch(err => {
             if (!err.message) {

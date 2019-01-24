@@ -10,13 +10,16 @@ const employeeRouter = express.Router();
 
 // schema to validate employee content
 const EmployeeJoiSchema = Joi.object().keys({
-    _id: Joi.string(),
-    __v: Joi.number(),
-    employeeId: Joi.string(),
+    employeeId: Joi.string().required(),
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    department: Joi.string().required(),
+});
+
+const UpdateEmployeeJoiSchema = Joi.object().keys({
     firstName: Joi.string(),
     lastName: Joi.string(),
-    department: Joi.string()
-
+    department: Joi.string(),
 });
 
 // get all employees
@@ -110,7 +113,8 @@ employeeRouter.post('/',
         })
         .then(employee => {
             console.log(`Creating new employee`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(employee.serialize());
+            return res.status(HTTP_STATUS_CODES.CREATED).json({
+                        created: employee.serialize() });
         })
         .catch(err => {
             if (!err.message) {
@@ -163,7 +167,7 @@ employeeRouter.put('/:employeeId',
 
         
 
-        const validation = Joi.validate(toUpdate, EmployeeJoiSchema);
+        const validation = Joi.validate(toUpdate, UpdateEmployeeJoiSchema);
         if (validation.error) {
             console.log(validation.error);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({

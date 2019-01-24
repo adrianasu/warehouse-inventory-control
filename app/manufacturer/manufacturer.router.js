@@ -82,21 +82,26 @@ manufacturerRouter.post('/',
         })
         .then( manufacturer => {
             if( manufacturer ){
-                return res.status( HTTP_STATUS_CODES.BAD_REQUEST ).json({
-                    message: `A manufacturer ${req.body.name} already exists.`
-                });
+                let err = { code: 400 };
+                err.message = `A manufacturer ${req.body.name} already exists.`
+                throw err;
             }
             // attempt to create a new manufacturer
             return Manufacturer
                 .create( newManufacturer )
+        })
                 .then( createdManufacturer => {
                     console.log(`Creating new manufacturer`);
-                    return res.status(HTTP_STATUS_CODES.CREATED).json(createdManufacturer.serialize());
+                    return res.status(HTTP_STATUS_CODES.CREATED).json({
+                                created: createdManufacturer.serialize() });
                 })
                 .catch(err => {
-                    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+                    if( !err.message ){
+                        err.message = 'Something went wrong. Please, try again.';
+                    }
+                    return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
                 });
-        })
+        
 })
 
 // update manufacturer by Id

@@ -61,9 +61,6 @@ function getAndSendItems( items ){
         let err ={ code: 400 };
         err.message = 'No items found. Please, try with another values.';
         throw err;
-    }
-    else if ( items.length === 1 ) {
-        return items[0].serializeAll();
     } else {
         return items.map( item => item.serializeAll() )
     }    
@@ -302,7 +299,7 @@ itemRouter.post('/',
         })
         .then( createdItem => {
                 //success
-                return res.status( HTTP_STATUS_CODES.CREATED ).json( createdItem.serialize());
+                return res.status( HTTP_STATUS_CODES.CREATED ).json( { created: createdItem.serialize() } );
         })
         .catch( err => {
             if( !err.message ){
@@ -564,7 +561,7 @@ itemRouter.put('/:itemId',
     });
     // if request body doesn't contain any updateable field send error message
     if (Object.keys(toUpdate.location).length === 0) {
-        const message = `Missing \`${updateableFields.join('or ')}\` in request body`;
+        const message = `Missing \`${updateableFields.join(' or ')}\` in request body`;
         console.error(message);
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
             message
@@ -573,6 +570,7 @@ itemRouter.put('/:itemId',
 
     const validation = Joi.validate(toUpdate, UpdateItemJoiSchema);
     if (validation.error) {
+        console.log(validation.error.details[0].message);
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
             message: validation.error.details[0].message
         });

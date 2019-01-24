@@ -53,7 +53,8 @@ productSchema.methods.serialize = function() {
         category: this.category.name,
         model: this.model,
         consummable: this.consummable,
-        minimumRequired: this.minimumRequired,
+        minimumRequiredQuantity: this.minimumRequired.quantity,
+        minimumRequiredUnits: this.minimumRequired.units,
     }
 }
 

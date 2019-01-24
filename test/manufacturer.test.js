@@ -80,7 +80,7 @@ describe( 'Manufacturer API resource tests', function(){
             .send( newManufacturer )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res.body, manufacturerKeys, newManufacturer );
+                checkObjectContent( res.body.created, manufacturerKeys, newManufacturer );
             })
             .catch( function( err ){
                 console.log( err );

@@ -70,7 +70,8 @@ productRouter.post('/',
         })
         .then( createdProduct => {
             console.log(`Creating new product`);
-            return res.status(HTTP_STATUS_CODES.CREATED).json(createdProduct.serialize());
+            return res.status(HTTP_STATUS_CODES.CREATED).json({
+                        created: createdProduct.serialize() });
         })
         .catch(err => {
             if( !err.message ){
@@ -204,8 +205,8 @@ productRouter.put('/:productId',
         }
 
 
-        const minimumReq = ["quantity", "units"];
-        const updateableFields = ["name", "manufacturer", "model", "consummable", "quantity", "units", "category"];
+        const minimumReq = ["minimumRequiredQuantity", "minimumRequiredUnits"];
+        const updateableFields = ["name", "manufacturer", "model", "consummable", "minimumRequiredQuantity", "minimumRequiredUnits", "category"];
         // check what fields were sent in the request body to update
         const toUpdate = {};
         
@@ -213,8 +214,10 @@ productRouter.put('/:productId',
             if (field in req.body && !minimumReq.includes(field)) {
                 toUpdate[field] = req.body[field];
             } else if (field in req.body && minimumReq.includes(field)){
+                // get field name ( remove minimumRequired prefix)
+                let myField = field.slice(field.indexOf('d')+1).toLowerCase();
                 toUpdate.minimumRequired = {
-                    [field]: req.body[field]
+                    [myField]: req.body[field]
                 }
             }
         });
@@ -234,7 +237,7 @@ productRouter.put('/:productId',
                 message: validation.error.details[0].message
             });
         }
-
+console.log(toUpdate)
         return Product
             // $set operator replaces the value of a field with the specified value
             .findOneAndUpdate({

@@ -80,7 +80,7 @@ describe( 'department API resource tests', function(){
             .send( newDepartment )
             .then( function( res ){
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent( res.body, departmentKeys, newDepartment );
+                checkObjectContent( res.body.created, departmentKeys, newDepartment );
             })
             .catch( function( err ){
                 console.log( err );

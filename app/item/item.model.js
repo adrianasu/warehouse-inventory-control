@@ -4,6 +4,10 @@ const Joi = require('joi');
 mongoose.Promise = global.Promise;
 const ObjectId = mongoose.Schema.Types.ObjectId;
 
+// Available options to describe the condition
+// of an item at registration time.
+const condition = ['New', 'Used', 'Open', 'Broken'];
+
 const itemSchema = mongoose.Schema({
     barcode: {
         type: Number,
@@ -66,34 +70,7 @@ const ItemJoiSchema = Joi.object().keys({
     __v: Joi.string(),
     _id: Joi.string(),
     barcode: Joi.number(),
-    product: Joi.object().keys({
-        _id: Joi.string(),
-        name: Joi.string(), 
-        manufacturer: Joi.object().keys({
-                _id: Joi.string(),
-                name: Joi.string(),
-                __v: Joi.number()
-        }),
-        model: Joi.string(),
-        consummable: Joi.boolean(),
-        minimumRequired: Joi.object().keys({
-            quantity: Joi.number(),
-            units: Joi.string()
-        }),
-        category: Joi.object().keys({
-            name: Joi.string(),
-            addedBy: Joi.object().keys({
-                _id: Joi.string(),
-                firstName: Joi.string().min(1).trim(),
-                lastName: Joi.string().min(1).trim(),
-                username: Joi.string().min(4).max(30).trim(),
-                password: Joi.string().min(7).max(30).trim(),
-                accessLevel: Joi.number().optional(),
-                __v: Joi.number()
-            }),
-        }),
-        __v: Joi.number()
-    }),
+    product: Joi.string(),
     serialNumber: Joi.number(),
     registered: Joi.object().keys({
         date: Joi.date(),
@@ -325,8 +302,7 @@ const UpdateItemJoiSchema = Joi.object().keys({
         aisle: Joi.string(),
         shelf: Joi.number(),
         bin: Joi.number()
-    }),
-    isCheckedOut: Joi.boolean()
+    })
 })
 
 
@@ -353,10 +329,14 @@ itemSchema.methods.serializeAll = function () {
         manufacturer: this.product.manufacturer.name,
         category: this.product.category.name,
         serialNumber: this.serialNumber,
-        registered: this.registered,
+        registeredDate: this.registered.date,
+        registeredCondition: this.registered.condition,
         checkedOut: this.checkedOut,
         checkedIn: this.checkedIn,
-        location: this.location,
+        warehouse: this.location.warehouse,
+        aisle: this.location.aisle,
+        shelf: this.location.shelf,
+        bin: this.location.bin,
         isCheckedOut: this.isCheckedOut,
     }
 }
@@ -380,10 +360,11 @@ itemSchema.methods.serializeWithUsefulLife = function () {
         manufacturer: this.product.manufacturer.name,
         category: this.product.category.name,
         serialNumber: this.serialNumber,
-        registered: this.registered,
+        registeredDate: this.registered.date,
+        registeredCondition: this.registered.condition,
         checkedOut: this.checkedOut,
         checkedIn: this.checkedIn,
-        location: this.location,
+        warehouse: this.location.warehouse,
         usefulLife: this.calculateUsefulLife()
     }
 }
@@ -424,4 +405,4 @@ itemSchema.pre( 'findOne', function( next ){
 const Item = mongoose.model( "Item", itemSchema );
 
 module.exports ={
-    Item, ItemJoiSchema, UpdateItemJoiSchema };
+    Item, ItemJoiSchema, UpdateItemJoiSchema, condition };

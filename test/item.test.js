@@ -41,9 +41,9 @@ function checkResponse(res, statusCode, resType) {
 }
 
 function checkObjectContent( res, itemKeys, newItem ){
-    expect(res.body).to.include.keys(itemKeys);
+    expect(res).to.include.keys(itemKeys);
     itemKeys.forEach( function( key ) {
-        expect(res.body[key]).to.equal(newItem[key]);
+        expect(res[key]).to.equal(newItem[key]);
     });
 }
 
@@ -101,7 +101,7 @@ describe( 'Items API resource tests', function(){
             .then( function( res ){
            
                 checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent(res.body, itemKeys, newItem);
+                checkObjectContent(res.body.created, itemKeys, newItem);
             })
             .catch( function( err ){
                 console.log( err );
@@ -218,12 +218,10 @@ describe( 'Items API resource tests', function(){
     it('Should update item by id', function () {
      
         let updateItem = {
-            location: {
                 warehouse: "Disneyland",
                 aisle: "A",
                 shelf: 2,
                 bin:3
-            }
         }
 
         return Item
@@ -237,7 +235,7 @@ describe( 'Items API resource tests', function(){
             })
             .then(function (res) {
                 checkResponse(res, HTTP_STATUS_CODES.OK, 'object')
-                expect(res.body.updated.location).to.deep.equal(updateItem.location);
+                expect(res.body.updated.location.warehouse).to.equal(updateItem.warehouse);
             })
             .catch(function (err) {
                 console.log(err);
