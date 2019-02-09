@@ -18,5 +18,5 @@ exports.HTTP_STATUS_CODES = {
     NOT_FOUND: 404,
     INTERNAL_SERVER_ERROR: 500
 }
-exports.JWT_SECRET = process.env.JWT_SECRET || 'default';
+exports.JWT_SECRET = process.env.JWT_SECRET || 'mermaid';
 exports.JWT_EXPIRY = '20d';

@@ -63,7 +63,7 @@ function runServer( databaseUrl, port = PORT ){
                     return reject(err);
                 }
                 server = app.listen(port, () => {
-                    console.log(`Your app is listening on port ${port}`);
+                    console.log(`Warehouse App is running on port ${port}`);
                     resolve();
                 })
                 .on('error', err => {
@@ -89,7 +89,9 @@ function closeServer(){
 }
 
 // to make this file a module and run the server if the script 
-// is run directly (node server.js)
+// is run directly (node server.js).
+// 'module' is this file. If the file required is
+// this file, run server.
 if( require.main === module ){
     runServer(DATABASE_URL).catch(err => console.error(err));
 }

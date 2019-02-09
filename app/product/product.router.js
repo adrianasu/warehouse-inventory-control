@@ -103,14 +103,14 @@ productRouter.get('/low-stock',
                     throw err;
                 }
                 // add products found in lowStock object. Define
-                // inStock and difference properties to fill later.
+                // inStock and shortfall properties to fill later.
                 products.forEach( product =>{
                     let id = product._id;
                     lowStock[id] = {
                         product: product,
                         minimumRequired: product.minimumRequired.quantity,
                         inStock: [],
-                        difference: 0
+                        shortfall: 0
                     } 
                 })
 
@@ -141,7 +141,7 @@ productRouter.get('/low-stock',
                 // put all our products
                 let toArray =[];
                 Object.keys(lowStock).forEach(productId => {
-                    lowStock[productId].difference = lowStock[productId].inStock.length - lowStock[productId].minimumRequired;
+                    lowStock[productId].shortfall = lowStock[productId].inStock.length - lowStock[productId].minimumRequired;
                     
                     toArray.push(lowStock[productId]);
                 })

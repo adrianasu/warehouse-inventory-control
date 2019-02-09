@@ -74,7 +74,7 @@ userSchema.methods.validatePassword = function( password ){
 userSchema.statics.hasAccess = function( accessLevel ){
     //express expects a function with req, res, next
     return function( req, res, next ){
-        console.log(`Checking if ${req.user.email} is allowed`);
+        console.log(`Checking if ${req.user.email} is allowed`, req.user);
         if( req.user && req.user.accessLevel >= accessLevel ){
             next();
         } else{

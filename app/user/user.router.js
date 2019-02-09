@@ -114,8 +114,9 @@ userRouter.get('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVE
 // update user's name, or accessLevel by id
 userRouter.put('/:userId', 
 jwtPassportMiddleware, 
-User.hasAccess(User.ACCESS_OVERVIEW),
+User.hasAccess(User.ACCESS_ADMIN),
         (req, res) => {
+            console.log(req.body)
 
     // check that id in request body matches id in request path
     if (req.params.userId !== req.body.id) {
@@ -157,14 +158,11 @@ User.hasAccess(User.ACCESS_OVERVIEW),
           
         }
         // users are allowed to update their own email only.
-        if( req.user.email !== user.email ){
+        if( req.body.email && (req.user.email !== user.email) ){
                 let err = { code: HTTP_STATUS_CODES.UNAUTHORIZED };
                 err.message = `Unauthorized.`;
                 throw err;
         }
-
-        // users are allowed to change their own password only.
-        
 
                 
         // do not allow to update "admin", "overview" or "public" demo users
@@ -188,25 +186,26 @@ User.hasAccess(User.ACCESS_OVERVIEW),
             }, {
                 new: true
             })
-            .then(updatedUser => {
-                // Find user using mongoose findOne to populate our data.
-                return Users
-                    .findOne({ _id: req.params.userId })
-            })
-            .then( user => {
-                console.log(`Updating user with id: \`${req.params.userId}\``);
-                return res.status(HTTP_STATUS_CODES.OK).json({
-                            updated: user.serialize()});
-            })
-         })
-         .catch(err => {
-             console.error(err)
-             if( !err.message ){
-                 err.message = 'Something went wrong. Please try again';
-             }
-             return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
-         });
-     });
+        })
+        .then(updatedUser => {
+            // Find user using mongoose findOne to populate our data.
+            return Users
+                .findOne({ _id: req.params.userId })
+        })
+        .then( user => {
+            console.log(`Updating user with id: \`${req.params.userId}\``);
+            return res.status(HTTP_STATUS_CODES.OK).json({
+                        updated: user.serialize()});
+        })
+         
+        .catch(err => {
+            console.error(err)
+            if( !err.message ){
+                err.message = 'Something went wrong. Please try again';
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+        });
+});
 
 // delete one 'user' using mongoose function findByIdAndDelete
 userRouter.delete('/:userId', jwtPassportMiddleware,

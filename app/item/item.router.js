@@ -16,17 +16,16 @@ const itemRouter = express.Router();
 const CheckInJoiSchema = Joi.object().keys({
     barcode: Joi.number(),
     date: Joi.date(),
-    employeeId: Joi.number(), 
-    itemId: Joi.string(),
-
-        });
+    employeeId: Joi.number(),
+    authorizedBy: Joi.string()
+});
 
 const CheckOutJoiSchema = Joi.object().keys({
+    employeeId: Joi.number(),
     barcode: Joi.number(),
     condition: Joi.string(),
     date: Joi.date(),
-    employeeId: Joi.number(),
-    itemId: Joi.string(),
+    authorizedBy: Joi.string()
 })
 
 function getCollectionIdsWithOR(searchQuery, collectionName) {
@@ -34,7 +33,7 @@ function getCollectionIdsWithOR(searchQuery, collectionName) {
         .find({ $or: searchQuery })
         .then(items => {
             if (items.length > 0) {
-                return items.map(item => item._id)
+                return items.map(item => item.id) 
             }
             return items;
         })
@@ -46,7 +45,7 @@ function getCollectionIds( queries, collectionName ){
         .find( queries )
         .then( items => {
             if( items.length > 0 ){
-              return items.map( item => item._id )
+              return items.map(item => item.id)
             }
             return items;
         })
@@ -71,6 +70,7 @@ function findWithORoperator( query ) {
     return Item.find({
         $or: query
     })
+    .sort('product.name')
     .then( items => {
         return getAndSendItems(items) })
 }
@@ -123,6 +123,7 @@ function getItemsWithoutAsyncBefore( query ){
         query.onShelf !== undefined ){
         return Item
             .find()
+            .sort('product')
             .then(items => {
                 return items.filter(item =>
                     item.isOnShelf() === query.onShelf)  
@@ -134,6 +135,7 @@ function getItemsWithoutAsyncBefore( query ){
     } else {
         return Item
         .find( itemQuery[0] )
+        .sort('product')
         .then(items => { 
                 // Check if onShelf is also included in the query
                 if (items && items.length >= 1 && query.onShelf !== undefined) {
@@ -208,6 +210,7 @@ function doOneAsyncAndGetItems( query ){
 
         return Item
             .find( searchQuery )
+            .sort('product')
         })
         .then(items => {
             // If items were found and "onShelf" was sent in the query,
@@ -314,6 +317,7 @@ itemRouter.post('/',
 itemRouter.get('/', ( req, res ) => {
     return Item
         .find()
+        .sort('product.name')
         .then( items => {
             console.log('Getting all items');
             return items.map( item => item.serializeAll() );
@@ -379,6 +383,7 @@ itemRouter.get('/search/:searchTerm', (req, res) => {
        
         return findWithORoperator( query )
         .then(serializedItems => {
+
                 return res.status(HTTP_STATUS_CODES.OK).json(serializedItems);
         })
         .catch(err => {
@@ -464,7 +469,7 @@ itemRouter.get('/useful-life',
         
     return Item
         .find()
-        .sort('product') // sort items by product
+        .sort('product.name') // sort items by product
         .then( items => {
             return items.map( item => item.serializeWithUsefulLife())
         })
@@ -488,12 +493,12 @@ itemRouter.get('/on-shelf/:booleanValue',
 
     return Item
         .find()
-        .sort('product') // sort items by product
+        .sort('product.name') // sort items by product
         .then( items => {       
             return items.filter( item => item.isOnShelf() === booleanVal )
         })
-        .then(items => {
-            return items.map(item => item.serializeAll())
+        .then(filteredItems => {
+            return filteredItems.map(item => item.serializeAll())
         })
         .then( serializedItems => {
             return res.status( HTTP_STATUS_CODES.OK ).json( serializedItems )
@@ -597,24 +602,23 @@ itemRouter.put('/:itemId',
     });
 
 // checkIn an item
-itemRouter.put('/check-in/:itemId',
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
+itemRouter.put('/check-in/:itemBarcode',
+    jwtPassportMiddleware, 
+    User.hasAccess( User.ACCESS_PUBLIC ), 
     (req, res) => {
-
+        
         let checkInData = {
             employeeId: req.body.employeeId,
-            itemId: req.body.itemId,
+            //itemId: req.body.itemId,
             date: Date.now(),
             barcode: req.body.barcode,
-            //authorizedBy: {
-            //     employee: req.user.employee._id 
-            // }
+            authorizedBy: req.user.employee._id 
+            
             
         }
-        // check that id in request body matches id in request path
-        if (req.params.itemId !== req.body.itemId) {
-            const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
+        // check that barcode in request body matches barcode in request path
+        if (req.params.itemBarcode != req.body.barcode) {
+            const message = `Request path barcode ${req.params.itemBarcode} and request body barcode ${req.body.barcode} must match`;
             console.error(message);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message
@@ -655,17 +659,17 @@ itemRouter.put('/check-in/:itemId',
                 checkInData.employee = employee.id;
                 // check if item was checked out
                 return Item
-                    .findById(req.body.itemId)
+                    .findOne({ barcode: req.body.barcode })
             })
             .then(item => {
                 if( item === null ){
                     let err = { code: 400 };
-                    err.message = `Item with id ${req.params.itemId} doesn't exist.`;
+                    err.message = `Item with barcode ${req.params.itemBarcode} doesn't exist.`;
                     throw err;
                 }
                 if( !item.isCheckedOut ){
                     let err = { code: 400 };
-                    err.message = `Item with id ${req.params.itemId} was already checked in.`;
+                    err.message = `Item with barcode ${req.params.itemBarcode} was already checked in.`;
                     throw err;
                 }
                 // if item was checked-out before then do check-in
@@ -675,10 +679,10 @@ itemRouter.put('/check-in/:itemId',
             .then(item => {
                 // To send the item populated we get it from the db
                 return Item
-                    .findById(req.body.itemId)
+                    .findOne({ barcode: req.body.barcode })
             })
             .then( item => {
-                console.log(`Checking in item with id: ${req.params.itemId}`);
+                console.log(`Checking in item with barcode: ${req.params.itemBarcode}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serializeAll() );
             })
             .catch(err => {                
@@ -691,22 +695,22 @@ itemRouter.put('/check-in/:itemId',
 
 // checkOut an item. It will add a check out transaction at the
 // beginning of the item.checkedOut array.
-itemRouter.put('/check-out/:itemId',
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_BASIC ), 
+itemRouter.put('/check-out/:itemBarcode',
+    jwtPassportMiddleware, 
+    User.hasAccess( User.ACCESS_BASIC ), 
     (req, res) => {
         
         let checkOutData = {
-            itemId: req.body.itemId,
+            //itemId: req.body.itemId,
             employeeId: req.body.employeeId,
             date: Date.now(),
             barcode: req.body.barcode,
             condition: req.body.condition,
-            //authorizedBy: req.user.employee._id,
+            authorizedBy: req.user.employee._id
         }
         // check that id in request body matches id in request path
-        if (req.params.itemId !== req.body.itemId) {
-            const message = `Request path id ${req.params.itemId} and request body id ${req.body.itemId} must match`;
+        if (req.params.itemBarcode != req.body.barcode) {
+            const message = `Request path barcode ${req.params.itemBarcode} and request body barcode ${req.body.barcode} must match`;
             console.error(message);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message
@@ -749,19 +753,19 @@ itemRouter.put('/check-out/:itemId',
                 checkOutData.employee = employee.id;
                 // check if item is on shelf
                 return Item
-                    .findById( req.body.itemId )    
+                    .findOne({ barcode: req.body.barcode })    
             })
             .then( item => {
       
                 if( item === null ){
                     let err = { code: 400 };
-                    err.message = `Item with id ${req.params.itemId} doesn't exist.`;
+                    err.message = `Item with barcode ${req.params.itemBarcode} doesn't exist.`;
                      console.error(err.message);
                     throw err;
                 }
                 if( item.isCheckedOut ){
                     let err = { code: 400 };
-                    err.message = `Item with id ${req.params.itemId} was already checked out.`;
+                    err.message = `Item with barcode ${req.params.itemBarcode} was already checked out.`;
                      console.error(err.message);
                     throw err;
                 }
@@ -773,10 +777,10 @@ itemRouter.put('/check-out/:itemId',
             .then(item => {
                 // To send the item populated we get it from the db
                return Item
-                   .findById(req.body.itemId)
+                   .findOne({ barcode: req.body.barcode })
             })
             .then( item => {
-                console.log(`Checking out item with id: ${req.params.itemId}`);
+                console.log(`Checking out item with id: ${req.params.itemBarcode}`);
                 return res.status(HTTP_STATUS_CODES.OK).json( item.serializeAll() );
             
             })

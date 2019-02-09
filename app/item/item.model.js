@@ -17,7 +17,10 @@ const itemSchema = mongoose.Schema({
         type: ObjectId,
         ref: "Product"
     },
-    serialNumber: Number,
+    serialNumber: { 
+        type: Number,
+        default: 0
+    },
     registered: {
         date: {
             type: Date,
@@ -69,8 +72,8 @@ const itemSchema = mongoose.Schema({
 const ItemJoiSchema = Joi.object().keys({
     __v: Joi.string(),
     _id: Joi.string(),
-    barcode: Joi.number(),
-    product: Joi.string(),
+    barcode: Joi.number().required(),
+    product: Joi.string().required(),
     serialNumber: Joi.number(),
     registered: Joi.object().keys({
         date: Joi.date(),
@@ -132,7 +135,7 @@ const ItemJoiSchema = Joi.object().keys({
         barcode: Joi.number()
     })),
     location: Joi.object().keys({
-        warehouse: Joi.string(),
+        warehouse: Joi.string().required(),
         aisle: Joi.string(),
         shelf: Joi.number(),
         bin: Joi.number()
@@ -354,8 +357,8 @@ itemSchema.methods.calculateUsefulLife = function(){
 itemSchema.methods.serializeWithUsefulLife = function () {
     return {
         id: this._id,
-        barcode: this.barcode,
         product: this.product.name,
+        barcode: this.barcode,
         model: this.product.model,
         manufacturer: this.product.manufacturer.name,
         category: this.product.category.name,
@@ -376,7 +379,7 @@ itemSchema.methods.isOnShelf = function () {
     // is "checked in" then it will be considered to be on shelf
     if ((this.checkedOut.length === 0 ) 
         || (this.checkedOut.length > 0 && this.checkedIn.length > 0
-            && this.checkedOut[0].date < this.checkedIn[0].date)) {
+            && this.checkedOut[0].date < this.checkedIn[0].date) ){
             return "true";
         } 
         return "false";
@@ -398,7 +401,7 @@ itemSchema.pre( 'find', function( next ){
 });
 
 itemSchema.pre( 'findOne', function( next ){
-    this.populate('product checkedIn.employee checkedOut.employee');
+    this.populate('product checkedIn.employee checkedOut.employee checkedIn.authorizedBy checkedOut.authorizedBy');
     next();
 });
 

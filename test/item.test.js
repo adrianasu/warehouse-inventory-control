@@ -332,10 +332,8 @@ it('Should delete item by id', function () {
         let checkOutData = {
             condition: "lost",
         };
-        let checkInData = {
-            barcode: 123456,
-        }
-        let itemId;
+        let checkInData = {};
+        let barcode;
 
         return Employee
             .findOne()
@@ -346,15 +344,15 @@ it('Should delete item by id', function () {
                  .findOne()
             })
             .then(item => {
-                itemId = item.id;
-                checkInData.itemId = itemId;
+                barcode = item.barcode;
+                checkInData.barcode = barcode;
                 item.checkedOut.unshift(checkOutData);
                 return item.save();
         
             })
             .then( item => {
                 return chai.request(app)
-                    .put(`/api/item/check-in/${itemId}`)
+                    .put(`/api/item/check-in/${barcode}`)
                     .set("Authorization", `Bearer ${jwToken}`)
                     .send(checkInData)
             })
@@ -368,9 +366,7 @@ it('Should delete item by id', function () {
     })
 
  it('Should check-out an item', function () {
-     let checkOutData = {
-         barcode: 898989
-     }
+     let checkOutData = {};
 
      return Employee
          .findOne()
@@ -380,13 +376,13 @@ it('Should delete item by id', function () {
                  .findOne()
          })
          .then(item => {  
-             checkOutData.itemId = item._id;
+             checkOutData.barcode = item.barcode;
              item.checkedOut = [];
              return item.save();
         })
          .then( item => {
              return chai.request(app)
-                 .put(`/api/item/check-out/${item.id}`)
+                 .put(`/api/item/check-out/${item.barcode}`)
                  .set("Authorization", `Bearer ${jwToken}`)
                  .send(checkOutData)
          })

@@ -9,6 +9,7 @@ const { Employee } = require('../employee/employee.model');
 const { Item, condition } = require('../item/item.model');
 const { Manufacturer } = require('../manufacturer/manufacturer.model');
 const { Product } = require('../product/product.model');
+const { User } = require('../user/user.model');
 const { levels } = require('../user/user.model');
 
 
@@ -42,17 +43,13 @@ function findAllNamesAndIds( CollectionName ){
 
 // get searchable fields: Categories, Products, Manufacturers,
 // Employees, Departments, AccessLevels, Units(from Product.minimumRequired)
-// and Warehouses
+// Warehouses and EmployeeIds with no user account
 fieldsRouter.get('/', (req, res) => {
     let fields = {};
    
     return findAllNamesAndIds(Category)
         .then( categories =>  {
             fields.category = categories;
-            return findAllNamesAndIds(Product);
-        })
-        .then( products => {
-            fields.product = products;
             return findAllNamesAndIds(Manufacturer);
         })
         .then( manufacturers => {
@@ -60,7 +57,26 @@ fieldsRouter.get('/', (req, res) => {
             return findAllNamesAndIds(Employee);
         })
         .then(employees => {
+            // The array contains objects as:
+            // { name: firstName + lastName, id: employeeId }
             fields.employee = employees;
+            // Get employee Ids from the User collection
+            return User
+            .find()
+        })
+        .then( users => {
+            users = users.map(
+                user => user.serialize());
+            let idWithAccount = users.map(
+                user => user.employeeId);
+            // Compare ALL employee Ids registered
+            // against employeeIds with user account 
+            // and send the ones with no account
+            return fields.employee.filter(employee => 
+                !idWithAccount.includes(employee.id.toString()))
+        })
+        .then( idsWithNoAccount => {
+            fields.idsWithNoAccount = idsWithNoAccount;
             return findAllNamesAndIds(Department);
         })
         .then(departments => {
@@ -70,6 +86,8 @@ fieldsRouter.get('/', (req, res) => {
         })
         .then(warehouses => {
             fields.warehouse = warehouses.sort();
+            // To find the "unit" fields, we'll get the
+            // products that have a minimumRequired quantity specified.
             return Product
             .find({"minimumRequired.quantity": { $gt: 0 }})
         })
@@ -81,13 +99,47 @@ fieldsRouter.get('/', (req, res) => {
             fields.accessLevel = levels;
             // send condition options for registering items
             fields.condition = condition;
+            // Send barcodes of items that are currently checked-out
+            return Item
+                .find({ isCheckedOut: true })
+        })
+        .then( items => {
+            return items.map(item => { return { barcode: item.barcode } })
+        })
+        .then( barcodes => {
+            // If more than 5 barcodes were found, send 5.
+            if( barcodes && barcodes.length > 5){
+                fields.checkedOut = barcodes.slice(0, 5);
+            } else {
+                fields.checkedOut = barcodes;
+            }
+            // Send barcodes of items that are currently checked-in
+            return Item
+            .find({ isCheckedOut: false })
+        })
+        .then( items => {
+            return items.map(item => { return { barcode: item.barcode } })
+        })
+        .then( barcodes => {
+            // If more than 5 barcodes were found, send 5.
+            if( barcodes && barcodes.length > 5){
+                fields.checkedIn = barcodes.slice(0, 5);
+            } else {
+                fields.checkedIn = barcodes;
+            }
+            return Product
+            .find()
+        })
+        .then( products => {
+            fields.product = products.map(product => product.serialize());
             return res.status(HTTP_STATUS_CODES.OK ).json( fields );
         })
         .catch( err => {
             return res.status( HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json({
                 message: 'Something went wrong. Please try again'
             })
-        })
-})
+        });
+
+});
 
 module.exports = { fieldsRouter };

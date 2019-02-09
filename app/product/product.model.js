@@ -13,7 +13,10 @@ const productSchema = mongoose.Schema({
         type: ObjectId,
         ref: "Manufacturer"
     },
-    model: String,
+    model: {
+        type: String,
+        default: "NA"
+    },
     consummable: {
         type: Boolean,
         default: false
@@ -23,7 +26,10 @@ const productSchema = mongoose.Schema({
             type: Number,
             default: 0
         },
-        units: String
+        units: {
+            type: String,
+            default: "pieces"
+        }
     },
     category: {
         type: ObjectId,
@@ -33,15 +39,15 @@ const productSchema = mongoose.Schema({
  
 const ProductJoiSchema = Joi.object().keys({
     _id: Joi.string(),
-    name: Joi.string(),
-    manufacturer: Joi.string(),
+    name: Joi.string().required(),
+    manufacturer: Joi.string().required(),
     model: Joi.string(),
     consummable: Joi.boolean(),
     minimumRequired: Joi.object().keys({
         quantity: Joi.number(),
         units: Joi.string()
     }),
-    category: Joi.string(),
+    category: Joi.string().required(),
     __v: Joi.number()
 });
 
