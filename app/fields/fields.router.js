@@ -1,8 +1,6 @@
 const express = require('express');
 
 const { HTTP_STATUS_CODES } = require('../config');
-// const { jwtPassportMiddleware } = require('../auth/auth.strategy');
-
 const { Category } = require('../category/category.model');
 const { Department } = require('../department/department.model');
 const { Employee } = require('../employee/employee.model');
@@ -134,10 +132,12 @@ fieldsRouter.get('/', (req, res) => {
             fields.product = products.map(product => product.serialize());
             return res.status(HTTP_STATUS_CODES.OK ).json( fields );
         })
-        .catch( err => {
-            return res.status( HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ).json({
-                message: 'Something went wrong. Please try again'
-            })
+        .catch(err => {
+            console.error(err)
+            if (!err.message) {
+                err.message = 'Something went wrong. Please try again';
+            }
+            return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
         });
 
 });

@@ -40,8 +40,6 @@ employeeRouter.get('/', (req, res) => {
 
 // get employee by Id
 employeeRouter.get('/:employeeId',
-        // jwtPassportMiddleware, 
-        // User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
         return Employee
         .findOne({
@@ -67,8 +65,8 @@ employeeRouter.get('/:employeeId',
 
 // create employee
 employeeRouter.post('/', 
-   // jwtPassportMiddleware, 
-  //  User.hasAccess(User.ACCESS_ADMIN), 
+    jwtPassportMiddleware, 
+    User.hasAccess(User.ACCESS_PUBLIC), 
     (req, res ) => {
     // we can access req,body payload bc we defined express.json
     // middleware in server.js
@@ -126,14 +124,9 @@ employeeRouter.post('/',
 
 // update employee by Id
 employeeRouter.put('/:employeeId', 
-    //jwtPassportMiddleware,
-    //  User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_PUBLIC),
     (req, res) => {
-        // const updateEmployee = {
-        //     employeeId: req.body.employeeId,
-        //     firstName: req.body.firstName,
-        //     lastName: req.body.lastName,
-        // }
 
         // check that id in request body matches id in request path
         if (req.params.employeeId != req.body.employeeId) {
@@ -175,8 +168,6 @@ employeeRouter.put('/:employeeId',
             });
         }
 
-
-
         return Employee
             // $set operator replaces the value of a field with the specified value
             .findOneAndUpdate({
@@ -198,11 +189,11 @@ employeeRouter.put('/:employeeId',
 
 // delete employee
 employeeRouter.delete('/:employeeId',
-    //jwtPassportMiddleware,
-    //User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
 
-        console.log(`Deleting employee with id: \`${req.params.employeeId}\` and his/her user.`);
+    // The correspondent user will be deleted too.
 
     return Employee
         .findOne({

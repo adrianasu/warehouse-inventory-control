@@ -33,8 +33,6 @@ departmentRouter.get('/', (req, res) => {
 
 // get department by Id
 departmentRouter.get('/:departmentId',
-        // jwtPassportMiddleware, 
-        // User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
         return Department
         .findOne({
@@ -60,8 +58,8 @@ departmentRouter.get('/:departmentId',
 
 // create department
 departmentRouter.post('/', 
-   // jwtPassportMiddleware, 
-  //  User.hasAccess(User.ACCESS_ADMIN), 
+   jwtPassportMiddleware, 
+   User.hasAccess(User.ACCESS_PUBLIC), 
     (req, res ) => {
     // we can access req,body payload bc we defined express.json
     // middleware in server.js
@@ -109,8 +107,8 @@ departmentRouter.post('/',
 
 // update department by Id
 departmentRouter.put('/:departmentId', 
-    //jwtPassportMiddleware,
-    //  User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_PUBLIC),
     (req, res) => {
         const toUpdate = {
             name: req.body.name
@@ -164,10 +162,11 @@ departmentRouter.put('/:departmentId',
 
 // delete department
 departmentRouter.delete('/:departmentId',
-    //jwtPassportMiddleware,
-    //User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
-        console.log(`Deleting department with id: \`${req.params.departmentId}\` and all the employees in that department and their users.`);
+        // All the employees in that department and 
+        // their users will be deleted too.
         
         return Employee
         .find({ 

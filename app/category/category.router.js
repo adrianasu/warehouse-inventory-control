@@ -62,8 +62,8 @@ categoryRouter.get('/:categoryId',
 
 // create category
 categoryRouter.post('/', 
-   // jwtPassportMiddleware, 
-  //  User.hasAccess(User.ACCESS_ADMIN), 
+   jwtPassportMiddleware, 
+   User.hasAccess(User.ACCESS_PUBLIC), 
     (req, res ) => {
     // we can access req,body payload bc we defined express.json
     // middleware in server.js
@@ -111,8 +111,8 @@ categoryRouter.post('/',
 
 // update category by Id
 categoryRouter.put('/:categoryId', 
-    //jwtPassportMiddleware,
-    //  User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_PUBLIC),
     (req, res) => {
         const toUpdate = {
             name: req.body.name
@@ -165,11 +165,12 @@ categoryRouter.put('/:categoryId',
 
 // delete category
 categoryRouter.delete('/:categoryId',
-    //jwtPassportMiddleware,
-    //User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
 
-    console.log(`Deleting category with id: \`${req.params.categoryId}\`. Products and items containing this category will be deleted as well.`);
+    // Products and items containing this 
+    // category will be deleted as well.
     return Product
         .find({
             category: req.params.categoryId

@@ -3,7 +3,7 @@ const Joi = require('joi');
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
-const { Product, ProductJoiSchema } = require('../product/product.model');
+const { Product, ProductJoiSchema, UpdateProductJoiSchema } = require('../product/product.model');
 const { Item } = require('../item/item.model');
 
 const productRouter = express.Router();
@@ -28,7 +28,7 @@ productRouter.get('/', (req, res) => {
 // create a product
 productRouter.post('/', 
     jwtPassportMiddleware, 
-    User.hasAccess(User.ACCESS_ADMIN), 
+    User.hasAccess(User.ACCESS_PUBLIC), 
     (req, res ) => {
     // we can access req,body payload bc we defined express.json
     // middleware in server.js
@@ -51,7 +51,7 @@ productRouter.post('/',
         });
     }
 
-    // check if product already exists
+    // check if product name already exists
     return Product
         .findOne({
             name: req.body.name
@@ -85,8 +85,8 @@ productRouter.post('/',
 // get products with low stock (its minimumRequired is > 0
 // and its current quantity is less than that)
 productRouter.get('/low-stock',
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    jwtPassportMiddleware, 
+    User.hasAccess( User.ACCESS_PUBLIC ), 
     (req, res) => {
         let lowStock ={};
         // find all consummable products required
@@ -161,8 +161,6 @@ productRouter.get('/low-stock',
 
 // get product by Id
 productRouter.get('/:productId',
-        // jwtPassportMiddleware, 
-        // User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
         
     return Product
@@ -191,10 +189,9 @@ productRouter.get('/:productId',
 
 // update product by Id
 productRouter.put('/:productId', 
-//jwtPassportMiddleware,
-  //  User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_PUBLIC),
     (req, res) => {
-        //console.log("BODY ", req.body);
         // check that id in request body matches id in request path
         if (req.params.productId !== req.body.id) {
             const message = `Request path id ${req.params.productId} and request body id ${req.body.id} must match`;
@@ -230,14 +227,13 @@ productRouter.put('/:productId',
             });
         }
 
-        const validation = Joi.validate(toUpdate, ProductJoiSchema);
+        const validation = Joi.validate(toUpdate, UpdateProductJoiSchema);
         if (validation.error) {
             console.log(validation.error);
             return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
                 message: validation.error.details[0].message
             });
         }
-console.log(toUpdate)
         return Product
             // $set operator replaces the value of a field with the specified value
             .findOneAndUpdate({
@@ -258,11 +254,12 @@ console.log(toUpdate)
 
 // delete product
 productRouter.delete('/:productId',
-    //jwtPassportMiddleware,
-    //User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
 
-        console.log(`Deleting Product with id: \`${req.params.productId}\` and items that contain that product.`);
+        // Items that contain that product
+        // will be deleted too.
         return Item
             .deleteMany({
                 product: req.params.productId

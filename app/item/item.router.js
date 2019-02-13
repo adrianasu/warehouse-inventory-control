@@ -1,7 +1,6 @@
 const express = require('express');
 const Joi = require('Joi');
 
-
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
 const User = require('../user/user.model');
@@ -257,26 +256,26 @@ function getItems( requestedQuery ){
 }
 
 
-// create new item
+// Create new item
 itemRouter.post('/', 
-// jwtPassportMiddleware, 
-// User.hasAccess(User.ACCESS_PUBLIC), 
+    jwtPassportMiddleware, 
+    User.hasAccess(User.ACCESS_PUBLIC), 
 (req, res) => {
     const newItem = {
         barcode: req.body.barcode,
         product: req.body.product,
         serialNumber: req.body.serialNumber,
-        registered: {
-            condition: req.body.condition,
-        },
         location: {
             warehouse: req.body.warehouse,
             aisle: req.body.aisle,
             shelf: req.body.shelf,
             bin: req.body.bin
+        },
+        registered: {
+            condition: req.body.condition
         }
     }
-  
+    
     // validate new item data using Joi
     const validation = Joi.validate( newItem, ItemJoiSchema );
     if( validation.error ){
@@ -463,8 +462,8 @@ itemRouter.get('/warehouse', (req, res) => {
 
 // get item's usefulLife report
 itemRouter.get('/useful-life', 
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    jwtPassportMiddleware, 
+    User.hasAccess( User.ACCESS_PUBLIC ), 
     ( req, res ) => {
         
     return Item
@@ -485,8 +484,8 @@ itemRouter.get('/useful-life',
 
 // get items that are or are not on shelf (onShelf: true or false)
 itemRouter.get('/on-shelf/:booleanValue', 
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    jwtPassportMiddleware, 
+    User.hasAccess( User.ACCESS_PUBLIC ), 
     ( req, res ) => {
 
     const booleanVal = req.params.booleanValue;
@@ -512,8 +511,6 @@ itemRouter.get('/on-shelf/:booleanValue',
 
 // get item by Id
 itemRouter.get('/:itemId',
-        // jwtPassportMiddleware, 
-        // User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
         
     return Item
@@ -540,8 +537,8 @@ itemRouter.get('/:itemId',
 
 // update item by Id
 itemRouter.put('/:itemId',
-        // jwtPassportMiddleware, 
-        // User.hasAccess( User.ACCESS_PUBLIC ), 
+        jwtPassportMiddleware, 
+        User.hasAccess( User.ACCESS_PUBLIC ), 
         (req, res) => {
 
         // check that id in request body matches id in request path
@@ -697,11 +694,10 @@ itemRouter.put('/check-in/:itemBarcode',
 // beginning of the item.checkedOut array.
 itemRouter.put('/check-out/:itemBarcode',
     jwtPassportMiddleware, 
-    User.hasAccess( User.ACCESS_BASIC ), 
+    User.hasAccess( User.ACCESS_PUBLIC ), 
     (req, res) => {
         
         let checkOutData = {
-            //itemId: req.body.itemId,
             employeeId: req.body.employeeId,
             date: Date.now(),
             barcode: req.body.barcode,
@@ -795,8 +791,8 @@ itemRouter.put('/check-out/:itemBarcode',
 
 // delete item by Id
 itemRouter.delete('/:itemId',
-    // jwtPassportMiddleware, 
-    // User.hasAccess( User.ACCESS_PUBLIC ), 
+    jwtPassportMiddleware, 
+    User.hasAccess( User.ACCESS_ADMIN ), 
     (req, res) => {
         return Item
             .findOneAndDelete({
@@ -810,10 +806,12 @@ itemRouter.delete('/:itemId',
                 });
             })
             .catch(err => {
-                return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-                    message: 'Something went wrong. Please try again'
-                });
-            })
+                console.error(err)
+                if (!err.message) {
+                    err.message = 'Something went wrong. Please try again';
+                }
+                return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
+            });
     });
 
 

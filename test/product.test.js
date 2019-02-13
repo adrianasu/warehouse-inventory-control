@@ -15,7 +15,7 @@ const expect = chai.expect;
 // allow us to use chai.request() method
 chai.use(chaiHttp);
 
-let testUser, jwToken;
+let jwToken;
 
 const productKeys = ["name", "model", "consummable"];
 
@@ -71,7 +71,6 @@ describe( 'Product API resource tests', function(){
 
     it( 'Should create a new product', function(){
 
-        
        let newProduct = {
             name: "newProduct",
             model: "ABC123",
@@ -97,12 +96,16 @@ describe( 'Product API resource tests', function(){
     });
 
     it("Should not create a new product bc already exists", function(){
-        let newProduct = {};
+        let newProduct = {
+            model: "ABC123"
+        };
         
         return Product 
         .findOne()
         .then( product => {
             newProduct.name = product.name;
+            newProduct.manufacturer = product.manufacturer.id;
+            newProduct.category = product.category.id;
             return chai.request( app )
                 .post('/api/product')
                 .set('Authorization', `Bearer ${ jwToken }`)

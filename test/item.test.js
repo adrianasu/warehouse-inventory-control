@@ -85,39 +85,54 @@ describe( 'Items API resource tests', function(){
         return closeServer();
     });
 
-    it( 'Should create a new item', function(){
+    it.only( 'Should create a new item', function(){
        let newItem = {
         barcode: 123456,
         serialNumber: 567890,
-        registered: {
-            condition: "New"
-        }
+        warehouse: "Mine",
+        aisle: "H",
+        shelf: 3,
+        bin: 2
        }
-    
-        return chai.request( app )
-            .post('/api/item')
-            .set('Authorization', `Bearer ${ jwToken }`)
-            .send( newItem )
-            .then( function( res ){
-           
-                checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
-                checkObjectContent(res.body.created, itemKeys, newItem);
-            })
-            .catch( function( err ){
-                console.log( err );
-            });
+
+       return Product
+       .findOne()
+       .then( product => {
+            newItem.product = product.id;
+            return chai.request( app )
+                .post('/api/item')
+                .set('Authorization', `Bearer ${ jwToken }`)
+                .send( newItem )
+       })
+        .then( function( res ){
+            checkResponse( res, HTTP_STATUS_CODES.CREATED, 'object' );
+            checkObjectContent(res.body.created, itemKeys, newItem);
+        })
+        .catch( function( err ){
+            console.log( err );
+        });
     });
 
     it("Should not create a new item bc barcode already exists", function(){
         let newItem = {
-            serialNumber: 9876,
+            barcode: 123456,
+            serialNumber: 567890,
+            condition: "New",
+            warehouse: "Mine",
+            aisle: "H",
+            shelf: 3,
+            bin: 2
         }
         
         return Item 
         .findOne()
         .then( item => {
             newItem.barcode = item.barcode;
-        
+            return Product
+            .findOne()
+        })
+        .then( product => {
+            newItem.product = product.id;
             return chai.request( app )
                 .post('/api/item')
                 .set('Authorization', `Bearer ${ jwToken }`)

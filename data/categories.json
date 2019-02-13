@@ -1,6 +1,6 @@
-{"_id":{"$oid":"5c44efdb071b4577641273b9"},"name":"Home","addedBy":{"$oid":"5c44efdb071b4577641273b0"},"__v":0}
-{"_id":{"$oid":"5c44efdb071b4577641273ba"},"name":"Tools","addedBy":{"$oid":"5c44efdb071b4577641273b2"},"__v":0}
-{"_id":{"$oid":"5c44efdb071b4577641273bb"},"name":"Health","addedBy":{"$oid":"5c44efdb071b4577641273b3"},"__v":0}
-{"_id":{"$oid":"5c44efdb071b4577641273bc"},"name":"Sports","addedBy":{"$oid":"5c44efdb071b4577641273b3"},"__v":0}
-{"_id":{"$oid":"5c44efdb071b4577641273bd"},"name":"Movies","addedBy":{"$oid":"5c44efdb071b4577641273b1"},"__v":0}
-{"_id":{"$oid":"5c44efde071b457764127445"},"name":"newCat","__v":0}
+{"_id":{"$oid":"5c5faa8f7c843c9da08cc940"},"name":"Toys","addedBy":{"$oid":"5c5faa8f7c843c9da08cc936"},"__v":0}
+{"_id":{"$oid":"5c5faa8f7c843c9da08cc941"},"name":"Jewelery","addedBy":{"$oid":"5c5faa8f7c843c9da08cc93a"},"__v":0}
+{"_id":{"$oid":"5c5faa8f7c843c9da08cc942"},"name":"Electronics","addedBy":{"$oid":"5c5faa8f7c843c9da08cc93a"},"__v":0}
+{"_id":{"$oid":"5c5faa8f7c843c9da08cc943"},"name":"Books","addedBy":{"$oid":"5c5faa8f7c843c9da08cc939"},"__v":0}
+{"_id":{"$oid":"5c5faa8f7c843c9da08cc944"},"name":"Music","addedBy":{"$oid":"5c5faa8f7c843c9da08cc938"},"__v":0}
+{"_id":{"$oid":"5c5faa917c843c9da08cc9cc"},"name":"newCat","__v":0}

@@ -3,7 +3,6 @@ const Joi = require('joi');
 
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
-
 const { Employee } = require('../employee/employee.model');
 const User = require('./user.model');
 const Users = User.User;
@@ -86,8 +85,8 @@ userRouter.post('/', (req, res) => {
 
 // retrieve all users' employee, email and access level
 userRouter.get('/', 
-// jwtPassportMiddleware, 
-// User.hasAccess(User.ACCESS_PUBLIC), 
+    jwtPassportMiddleware, 
+    User.hasAccess(User.ACCESS_PUBLIC), 
 (req, res) => {
     
     return Users
@@ -100,7 +99,10 @@ userRouter.get('/',
         });
 });
 
-userRouter.get('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVERVIEW), (req, res) => {
+userRouter.get('/:userId', 
+    jwtPassportMiddleware, 
+    User.hasAccess(User.ACCESS_OVERVIEW), 
+    (req, res) => {
     return Users    
         .findById(req.params.userId)
         .then(user => {
@@ -113,10 +115,9 @@ userRouter.get('/:userId', jwtPassportMiddleware, User.hasAccess(User.ACCESS_OVE
 
 // update user's name, or accessLevel by id
 userRouter.put('/:userId', 
-jwtPassportMiddleware, 
-User.hasAccess(User.ACCESS_ADMIN),
-        (req, res) => {
-            console.log(req.body)
+    jwtPassportMiddleware, 
+    User.hasAccess(User.ACCESS_OVERVIEW),
+    (req, res) => {
 
     // check that id in request body matches id in request path
     if (req.params.userId !== req.body.id) {
@@ -128,7 +129,6 @@ User.hasAccess(User.ACCESS_ADMIN),
     // If the user sent over any of them 
     // we update those values on the database
     const updateableFields = ["email", "accessLevel"];
-    // const updateableFields = ["password", "email", "accessLevel"];
 
     // check what fields were sent in the request body to update
     const toUpdate = {};
@@ -167,9 +167,12 @@ User.hasAccess(User.ACCESS_ADMIN),
                 
         // do not allow to update "admin", "overview" or "public" demo users
         let email = user.email;
-        if (email === "admin" || email === "public" || email === "overview") {
+   
+        if (email === "admin@m.com" 
+            || email === "public@m.com" 
+            || email === "overview@m.com") {
             let err = { code: HTTP_STATUS_CODES.UNAUTHORIZED };
-            err.message = `Unauthorized to edit ${email} user`;
+            err.message = `Unauthorized to edit demo user`;
             throw err;
         }
                 
@@ -208,14 +211,14 @@ User.hasAccess(User.ACCESS_ADMIN),
 });
 
 // delete one 'user' using mongoose function findByIdAndDelete
-userRouter.delete('/:userId', jwtPassportMiddleware,
+userRouter.delete('/:userId', 
+    jwtPassportMiddleware,
     User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
 
     return Users
         .findByIdAndDelete(req.params.userId)
         .then(deletedUser => {
-            console.log(`Deleting user with id: \`${req.params.userId}\``);
             res.status(HTTP_STATUS_CODES.OK).json({
                 deleted: `${req.params.userId}`,
                 OK: "true"
@@ -223,10 +226,13 @@ userRouter.delete('/:userId', jwtPassportMiddleware,
             
     })
     .catch(err => {
-        return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-            message: err
-        });
+        console.error(err)
+        if (!err.message) {
+            err.message = 'Something went wrong. Please try again';
+        }
+        return res.status(err.code || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json(err);
     });
+   
 });
 
 

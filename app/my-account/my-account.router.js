@@ -11,8 +11,8 @@ const Users = User.User;
 const myAccountRouter = express.Router();
 
 myAccountRouter.get('/:employeeId',
-    // jwtPassportMiddleware,
-    // Users.hasAccess(User.ACCESS_OVERVIEW),
+    jwtPassportMiddleware,
+    Users.hasAccess(User.ACCESS_OVERVIEW),
     (req, res) => {
         let employee;
         return Employee

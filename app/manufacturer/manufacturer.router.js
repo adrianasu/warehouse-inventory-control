@@ -58,8 +58,8 @@ manufacturerRouter.get('/:manufacturerId',
 
 // create manufacturer
 manufacturerRouter.post('/', 
-   // jwtPassportMiddleware, 
-  //  User.hasAccess(User.ACCESS_ADMIN), 
+   jwtPassportMiddleware, 
+   User.hasAccess(User.ACCESS_PUBLIC), 
     (req, res ) => {
     // we can access req,body payload bc we defined express.json
     // middleware in server.js
@@ -106,8 +106,8 @@ manufacturerRouter.post('/',
 
 // update manufacturer by Id
 manufacturerRouter.put('/:manufacturerId', 
-    //jwtPassportMiddleware,
-    //  User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+     User.hasAccess(User.ACCESS_PUBLIC),
     (req, res) => {
         const toUpdate = {
             name: req.body.name
@@ -160,11 +160,12 @@ manufacturerRouter.put('/:manufacturerId',
 
 // delete manufacturer
 manufacturerRouter.delete('/:manufacturerId',
-    //jwtPassportMiddleware,
-    //User.hasAccess(User.ACCESS_ADMIN),
+    jwtPassportMiddleware,
+    User.hasAccess(User.ACCESS_ADMIN),
     (req, res) => {
 
-    console.log(`Deleting manufacturer with id: \`${req.params.manufacturerId}\`. Products and items containing this manufacturer will be deleted as well.`);
+    // Products and items containing this manufacturer
+    // will be deleted as well.
     return Product
         .find({
             manufacturer: req.params.manufacturerId

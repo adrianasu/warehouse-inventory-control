@@ -1,5 +1,5 @@
-{"_id":{"$oid":"5c44efda071b45776412739b"},"name":"Identity","__v":0}
-{"_id":{"$oid":"5c44efda071b45776412739c"},"name":"Functionality","__v":0}
-{"_id":{"$oid":"5c44efda071b45776412739d"},"name":"Configuration","__v":0}
-{"_id":{"$oid":"5c44efda071b45776412739e"},"name":"Communications","__v":0}
-{"_id":{"$oid":"5c44efda071b45776412739f"},"name":"Usability","__v":0}
+{"_id":{"$oid":"5c5faa8e7c843c9da08cc922"},"name":"Paradigm","__v":0}
+{"_id":{"$oid":"5c5faa8e7c843c9da08cc923"},"name":"Mobility","__v":0}
+{"_id":{"$oid":"5c5faa8e7c843c9da08cc924"},"name":"Assurance","__v":0}
+{"_id":{"$oid":"5c5faa8e7c843c9da08cc925"},"name":"Data","__v":0}
+{"_id":{"$oid":"5c5faa8e7c843c9da08cc926"},"name":"Accountability","__v":0}

@@ -51,6 +51,20 @@ const ProductJoiSchema = Joi.object().keys({
     __v: Joi.number()
 });
 
+const UpdateProductJoiSchema = Joi.object().keys({
+    _id: Joi.string(),
+    name: Joi.string(),
+    manufacturer: Joi.string(),
+    model: Joi.string(),
+    consummable: Joi.boolean(),
+    minimumRequired: Joi.object().keys({
+        quantity: Joi.number(),
+        units: Joi.string()
+    }),
+    category: Joi.string(),
+    __v: Joi.number()
+});
+
 productSchema.methods.serialize = function() {
     return {
         id: this._id,
@@ -85,4 +99,4 @@ productSchema.pre('findOne', function (next) {
 
 const Product = mongoose.model( "Product", productSchema );
 
-module.exports = { Product, ProductJoiSchema };
+module.exports = { Product, ProductJoiSchema, UpdateProductJoiSchema };

@@ -141,108 +141,7 @@ const ItemJoiSchema = Joi.object().keys({
         bin: Joi.number()
     }),
     isCheckedOut: Joi.boolean()
-})
-
-const newItemJoiSchema = Joi.object().keys({
-    __v: Joi.string(),
-    _id: Joi.string(),
-    barcode: Joi.number(),
-    product: Joi.object().keys({
-        _id: Joi.string(),
-        name: Joi.string(),
-        manufacturer: Joi.object().keys({
-            _id: Joi.string(),
-            name: Joi.string(),
-            __v: Joi.number()
-        }),
-        model: Joi.string(),
-        consummable: Joi.boolean(),
-        minimumRequired: Joi.object().keys({
-            quantity: Joi.number(),
-            units: Joi.string()
-        }),
-        category: Joi.object().keys({
-            name: Joi.string(),
-            addedBy: Joi.object().keys({
-                _id: Joi.string(),
-                firstName: Joi.string().min(1).trim(),
-                lastName: Joi.string().min(1).trim(),
-                username: Joi.string().min(4).max(30).trim(),
-                password: Joi.string().min(7).max(30).trim(),
-                accessLevel: Joi.number().optional(),
-                __v: Joi.number()
-            }),
-        }),
-        __v: Joi.number()
-    }),
-    serialNumber: Joi.number(),
-    registered: Joi.object().keys({
-        date: Joi.date(),
-        condition: Joi.string()
-    }),
-    checkedOut: Joi.array().items(
-        Joi.object().keys({
-            employee: Joi.object().keys({
-                _id: Joi.string(),
-                firstName: Joi.string(),
-                lastName: Joi.string(),
-                department: Joi.object().keys({
-                    _id: Joi.string(),
-                    name: Joi.string(),
-                    __v: Joi.number()
-                }),
-                __v: Joi.number()
-            }),
-            date: Joi.date(),
-            barcode: Joi.number(),
-            condition: Joi.string(),
-            authorizedBy: Joi.object().keys({
-                _id: Joi.string(),
-                firstName: Joi.string(),
-                lastName: Joi.string(),
-                department: Joi.object().keys({
-                    _id: Joi.string(),
-                    name: Joi.string(),
-                    __v: Joi.number()
-                }),
-                __v: Joi.number()
-            }),
-        })),
-    checkedIn: Joi.array().items(
-        Joi.object().keys({
-            employee: Joi.object().keys({
-                _id: Joi.string(),
-                firstName: Joi.string(),
-                lastName: Joi.string(),
-                department: Joi.object().keys({
-                    _id: Joi.string(),
-                    name: Joi.string(),
-                    __v: Joi.number()
-                }),
-                authorizedBy: Joi.object().keys({
-                    _id: Joi.string(),
-                    firstName: Joi.string(),
-                    lastName: Joi.string(),
-                    department: Joi.object().keys({
-                        _id: Joi.string(),
-                        name: Joi.string(),
-                        __v: Joi.number()
-                    }),
-                    __v: Joi.number()
-                }),
-                __v: Joi.number()
-            }),
-            date: Joi.date(),
-            barcode: Joi.number()
-        })),
-    location: Joi.object().keys({
-        warehouse: Joi.string(),
-        aisle: Joi.string(),
-        shelf: Joi.number(),
-        bin: Joi.number()
-    }),
-    isCheckedOut: Joi.boolean()
-})
+});
 
 const UpdateItemJoiSchema = Joi.object().keys({
     checkedOut: Joi.array().items(
@@ -408,4 +307,5 @@ itemSchema.pre( 'findOne', function( next ){
 const Item = mongoose.model( "Item", itemSchema );
 
 module.exports ={
-    Item, ItemJoiSchema, UpdateItemJoiSchema, condition };
+    Item, ItemJoiSchema, UpdateItemJoiSchema, condition 
+};
