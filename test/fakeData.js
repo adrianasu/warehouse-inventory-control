@@ -145,7 +145,8 @@ function createItems(items){
 function seedItemsDb(){
     let manufacturerIds, categoryIds, departmentIds, employeeIds, userIds, productIds;
     let departments = generateDepartments();
-  
+    let manufacturers = generateManufacturers();
+    console.log("Generating database");
          
     return Department.insertMany(departments)
         .then(_departmentIds => {
@@ -159,7 +160,7 @@ function seedItemsDb(){
         })
         .then(_userIds => {
             userIds =_userIds;
-            return Manufacturer.insertMany(generateManufacturers())
+            return Manufacturer.insertMany(manufacturers)
         })
         .then(_manufacturerIds => {
             manufacturerIds = _manufacturerIds;
@@ -182,7 +183,7 @@ function seedItemsDb(){
             for( let x=0; x<40; x++ ){
                 items.push(generateOneItem(employeeIds, productIds, warehouses));
             }
-            console.log('Generating database');
+        
             return createItems(items);
         })
        
