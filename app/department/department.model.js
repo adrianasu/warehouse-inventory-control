@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 mongoose.Promise = global.Promise;
-const ObjectId = mongoose.Schema.Types.ObjectId;
 
 const departmentSchema = mongoose.Schema({
     name: {

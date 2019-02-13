@@ -1,5 +1,5 @@
 const express = require('express');
-const Joi = require('Joi');
+const Joi = require('joi');
 
 const { HTTP_STATUS_CODES } = require('../config');
 const { jwtPassportMiddleware } = require('../auth/auth.strategy');
