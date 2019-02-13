@@ -85,7 +85,7 @@ describe( 'Items API resource tests', function(){
         return closeServer();
     });
 
-    it.only( 'Should create a new item', function(){
+    it( 'Should create a new item', function(){
        let newItem = {
         barcode: 123456,
         serialNumber: 567890,
