@@ -484,8 +484,6 @@ itemRouter.get('/useful-life',
 
 // get items that are or are not on shelf (onShelf: true or false)
 itemRouter.get('/on-shelf/:booleanValue', 
-    jwtPassportMiddleware, 
-    User.hasAccess( User.ACCESS_PUBLIC ), 
     ( req, res ) => {
 
     const booleanVal = req.params.booleanValue;
