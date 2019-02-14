@@ -8,7 +8,7 @@ exports.TEST_DATABASE_URL =
 exports.PORT = process.env.PORT || 3000;
 
 exports.CLIENT_ORIGIN = 
-    //process.env.CLIENT_ORIGIN ||   Comment out to run locally
+    process.env.CLIENT_ORIGIN || 
     'http://localhost:3000';
 
 exports.HTTP_STATUS_CODES = {
