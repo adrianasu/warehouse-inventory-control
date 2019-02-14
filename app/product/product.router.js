@@ -8,14 +8,32 @@ const { Item } = require('../item/item.model');
 
 const productRouter = express.Router();
 
+function getItems(product, items){
+    return items && items.length > 0 ?
+        items.filter( item => item.product.name === product.name)
+        : [];
+}
+
+// Return all items that are the same product
+function addTotalItems( product, items ){
+    let thisProductItems = getItems(product, items);
+    let ids = thisProductItems.map(item => item.id);
+    product.items = ids;
+    return product;
+}
 
 // get all products
 productRouter.get('/', (req, res) => {
+    let products;
     return Product
         .find( {}, null, { sort: { name: 1 }}) // sort alphabetically by name
-        .then( products => {
-            console.log('Getting all  products');
-            return products.map( prod => prod.serialize() );
+        .then( _products => {
+            products = _products.map( prod => prod.serialize() );
+            return Item
+                .find()
+        })
+        .then(items => {
+            return products.map( prod => addTotalItems(prod, items) )
         })
         .then( products => {
             return res.status(HTTP_STATUS_CODES.OK).json(products);

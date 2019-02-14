@@ -120,7 +120,7 @@ describe( 'Product API resource tests', function(){
         });
     });
 
-    it('Should return all products', function(){
+    it.only('Should return all products', function(){
         return chai.request( app )
             .get('/api/product')
             .then( function( res ){
